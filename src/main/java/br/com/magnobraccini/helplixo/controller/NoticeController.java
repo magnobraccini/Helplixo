@@ -4,6 +4,7 @@ import br.com.magnobraccini.helplixo.model.Notice;
 import br.com.magnobraccini.helplixo.model.NoticeCategory;
 import br.com.magnobraccini.helplixo.service.NoticeService;
 import br.com.magnobraccini.helplixo.service.WorkspaceWatcherService;
+import br.com.magnobraccini.helplixo.service.UserPreferencesService;
 import br.com.magnobraccini.helplixo.view.dialogs.NoticeDialog;
 import br.com.magnobraccini.helplixo.view.notices.NoticePanel;
 
@@ -16,15 +17,22 @@ public final class NoticeController {
     private final NoticePanel view;
     private final Component dialogOwner;
     private final WorkspaceWatcherService workspaceWatcherService;
+    private final UserPreferencesService preferences;
     private String currentQuery = "";
     private NoticeCategory currentCategory;
 
     public NoticeController(NoticeService service, NoticePanel view, Component dialogOwner,
                             WorkspaceWatcherService workspaceWatcherService) {
+        this(service, view, dialogOwner, workspaceWatcherService, null);
+    }
+
+    public NoticeController(NoticeService service, NoticePanel view, Component dialogOwner,
+                            WorkspaceWatcherService workspaceWatcherService, UserPreferencesService preferences) {
         this.service = service;
         this.view = view;
         this.dialogOwner = dialogOwner;
         this.workspaceWatcherService = workspaceWatcherService;
+        this.preferences = preferences;
         bind();
     }
 
@@ -42,7 +50,9 @@ public final class NoticeController {
     }
 
     public void refresh() {
-        view.render(service.search(currentQuery, currentCategory));
+        var notices = service.search(currentQuery, currentCategory);
+        if (preferences != null) notices.forEach(n -> n.setFavorite(preferences.isFavorite("notice", n.getId())));
+        view.render(notices);
         if (workspaceWatcherService != null) {
             workspaceWatcherService.acknowledge();
         }
@@ -112,7 +122,9 @@ public final class NoticeController {
             return;
         }
         try {
-            Notice updated = service.toggleFavorite(notice.getId());
+            Notice updated = notice;
+            if (preferences != null) updated.setFavorite(preferences.toggleFavorite("notice", notice.getId()));
+            else updated = service.toggleFavorite(notice.getId());
             refresh();
             view.selectNotice(updated.getId());
         } catch (RuntimeException exception) {

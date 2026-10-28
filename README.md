@@ -18,6 +18,8 @@ $env:HELPLIXO_MASTER_PASSWORD = "sua-senha-mestre"
 
 No Windows, use `run-helplixo.bat` ou execute `mvn exec:java` nesta pasta. Os dados locais ficam em `data-dev/` e não devem ser commitados. Sem senha configurada, o modo de edição e a recuperação por senha mestre ficam bloqueados.
 
+Recentes e favoritos são separados automaticamente pelo perfil do Windows em uso, sem tela de login. Processos, ramais e os demais conteúdos permanecem compartilhados no diretório de dados.
+
 ## Compilar
 
 ```powershell

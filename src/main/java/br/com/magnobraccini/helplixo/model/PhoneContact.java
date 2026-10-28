@@ -1,5 +1,7 @@
 package br.com.magnobraccini.helplixo.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -48,6 +50,7 @@ public class PhoneContact {
     public void setExtension(String extension) { this.extension = extension; }
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
+    @JsonIgnore
     public boolean isFavorite() { return favorite; }
     public void setFavorite(boolean favorite) { this.favorite = favorite; }
     public boolean isDeleted() { return deleted; }

@@ -1,5 +1,7 @@
 package br.com.magnobraccini.helplixo.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -70,6 +72,7 @@ public class ProcessDocument {
     public void setObservations(String observations) { this.observations = observations; }
     public List<String> getLinks() { return links; }
     public void setLinks(List<String> links) { this.links = links; }
+    @JsonIgnore
     public boolean isFavorite() { return favorite; }
     public void setFavorite(boolean favorite) { this.favorite = favorite; }
     public boolean isArchived() { return archived; }

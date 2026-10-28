@@ -47,13 +47,13 @@ public final class MainController {
         this.dashboardController = new DashboardController(context.getDashboardService(), frame.getDashboardPanel());
         this.processController = new ProcessController(context.getFolderService(), context.getProcessService(),
                 context.getRecentService(), state, frame.getProcessPanel(), frame,
-                context.getLogService(), context.getWorkspaceWatcherService());
+                context.getLogService(), context.getWorkspaceWatcherService(), context.getUserPreferencesService());
         this.phoneContactController = new PhoneContactController(context.getPhoneContactService(),
-                frame.getPhoneContactPanel(), frame, context.getWorkspaceWatcherService());
+                frame.getPhoneContactPanel(), frame, context.getWorkspaceWatcherService(), context.getUserPreferencesService());
         this.noticeController = new NoticeController(context.getNoticeService(),
-                frame.getNoticePanel(), frame, context.getWorkspaceWatcherService());
+                frame.getNoticePanel(), frame, context.getWorkspaceWatcherService(), context.getUserPreferencesService());
         this.toolController = new ToolController(context.getToolService(),
-                frame.getToolPanel(), frame, context.getWorkspaceWatcherService());
+                frame.getToolPanel(), frame, context.getWorkspaceWatcherService(), context.getUserPreferencesService());
         bind();
     }
 

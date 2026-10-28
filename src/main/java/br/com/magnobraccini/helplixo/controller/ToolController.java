@@ -3,6 +3,7 @@ package br.com.magnobraccini.helplixo.controller;
 import br.com.magnobraccini.helplixo.model.Tool;
 import br.com.magnobraccini.helplixo.service.ToolService;
 import br.com.magnobraccini.helplixo.service.WorkspaceWatcherService;
+import br.com.magnobraccini.helplixo.service.UserPreferencesService;
 import br.com.magnobraccini.helplixo.util.ClipboardFiles;
 import br.com.magnobraccini.helplixo.view.dialogs.ToolDialog;
 import br.com.magnobraccini.helplixo.view.tools.ToolPanel;
@@ -17,14 +18,21 @@ public final class ToolController {
     private final ToolPanel view;
     private final Component dialogOwner;
     private final WorkspaceWatcherService workspaceWatcherService;
+    private final UserPreferencesService preferences;
     private String currentQuery = "";
 
     public ToolController(ToolService service, ToolPanel view, Component dialogOwner,
                           WorkspaceWatcherService workspaceWatcherService) {
+        this(service, view, dialogOwner, workspaceWatcherService, null);
+    }
+
+    public ToolController(ToolService service, ToolPanel view, Component dialogOwner,
+                          WorkspaceWatcherService workspaceWatcherService, UserPreferencesService preferences) {
         this.service = service;
         this.view = view;
         this.dialogOwner = dialogOwner;
         this.workspaceWatcherService = workspaceWatcherService;
+        this.preferences = preferences;
         bind();
     }
 
@@ -43,7 +51,9 @@ public final class ToolController {
     }
 
     public void refresh() {
-        view.render(service.search(currentQuery));
+        var tools = service.search(currentQuery);
+        if (preferences != null) tools.forEach(t -> t.setFavorite(preferences.isFavorite("tool", t.getId())));
+        view.render(tools);
         if (workspaceWatcherService != null) {
             workspaceWatcherService.acknowledge();
         }
@@ -110,7 +120,9 @@ public final class ToolController {
             return;
         }
         try {
-            Tool updated = service.toggleFavorite(tool.getId());
+            Tool updated = tool;
+            if (preferences != null) updated.setFavorite(preferences.toggleFavorite("tool", tool.getId()));
+            else updated = service.toggleFavorite(tool.getId());
             refresh();
             view.selectTool(updated.getId());
         } catch (RuntimeException exception) {

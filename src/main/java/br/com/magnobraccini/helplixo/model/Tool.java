@@ -1,5 +1,7 @@
 package br.com.magnobraccini.helplixo.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -48,6 +50,7 @@ public class Tool {
     public void setCommand(String command) { this.command = command; }
     public String getIcon() { return icon; }
     public void setIcon(String icon) { this.icon = icon; }
+    @JsonIgnore
     public boolean isFavorite() { return favorite; }
     public void setFavorite(boolean favorite) { this.favorite = favorite; }
     public boolean isDeleted() { return deleted; }

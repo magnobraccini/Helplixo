@@ -3,6 +3,7 @@ package br.com.magnobraccini.helplixo.controller;
 import br.com.magnobraccini.helplixo.model.PhoneContact;
 import br.com.magnobraccini.helplixo.service.PhoneContactService;
 import br.com.magnobraccini.helplixo.service.WorkspaceWatcherService;
+import br.com.magnobraccini.helplixo.service.UserPreferencesService;
 import br.com.magnobraccini.helplixo.view.dialogs.PhoneContactDialog;
 import br.com.magnobraccini.helplixo.view.phones.PhoneContactPanel;
 
@@ -15,16 +16,23 @@ public final class PhoneContactController {
     private final PhoneContactPanel view;
     private final Component dialogOwner;
     private final WorkspaceWatcherService workspaceWatcherService;
+    private final UserPreferencesService preferences;
     private String currentQuery = "";
     private String currentSector;
     private String currentFloor;
 
     public PhoneContactController(PhoneContactService service, PhoneContactPanel view, Component dialogOwner,
                                   WorkspaceWatcherService workspaceWatcherService) {
+        this(service, view, dialogOwner, workspaceWatcherService, null);
+    }
+
+    public PhoneContactController(PhoneContactService service, PhoneContactPanel view, Component dialogOwner,
+                                  WorkspaceWatcherService workspaceWatcherService, UserPreferencesService preferences) {
         this.service = service;
         this.view = view;
         this.dialogOwner = dialogOwner;
         this.workspaceWatcherService = workspaceWatcherService;
+        this.preferences = preferences;
         bind();
     }
 
@@ -43,7 +51,9 @@ public final class PhoneContactController {
     }
 
     public void refresh() {
-        view.render(service.search(currentQuery, currentSector, currentFloor));
+        var contacts = service.search(currentQuery, currentSector, currentFloor);
+        if (preferences != null) contacts.forEach(c -> c.setFavorite(preferences.isFavorite("phone", c.getId())));
+        view.render(contacts);
         view.updateFilterOptions(service.distinctSectors(), service.distinctFloors());
         if (workspaceWatcherService != null) {
             workspaceWatcherService.acknowledge();
@@ -121,7 +131,9 @@ public final class PhoneContactController {
             return;
         }
         try {
-            PhoneContact updated = service.toggleFavorite(contact.getId());
+            PhoneContact updated = contact;
+            if (preferences != null) updated.setFavorite(preferences.toggleFavorite("phone", contact.getId()));
+            else updated = service.toggleFavorite(contact.getId());
             refresh();
             view.selectContact(updated.getId());
         } catch (RuntimeException exception) {

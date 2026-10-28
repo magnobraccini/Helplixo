@@ -1,5 +1,7 @@
 package br.com.magnobraccini.helplixo.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -39,6 +41,7 @@ public class Notice {
     public void setCategory(NoticeCategory category) { this.category = category; }
     public String getCreatedBy() { return createdBy; }
     public void setCreatedBy(String createdBy) { this.createdBy = createdBy; }
+    @JsonIgnore
     public boolean isFavorite() { return favorite; }
     public void setFavorite(boolean favorite) { this.favorite = favorite; }
     public boolean isDeleted() { return deleted; }

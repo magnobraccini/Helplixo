@@ -29,6 +29,7 @@ import br.com.magnobraccini.helplixo.service.RecentService;
 import br.com.magnobraccini.helplixo.service.SearchService;
 import br.com.magnobraccini.helplixo.service.SecurityService;
 import br.com.magnobraccini.helplixo.service.ToolService;
+import br.com.magnobraccini.helplixo.service.UserPreferencesService;
 import br.com.magnobraccini.helplixo.service.WorkspaceWatcherService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -46,6 +47,7 @@ public final class ApplicationContext {
     private final NoticeService noticeService;
     private final ToolService toolService;
     private final RecentService recentService;
+    private final UserPreferencesService userPreferencesService;
     private final DashboardService dashboardService;
     private final SearchService searchService;
     private final SecurityService securityService;
@@ -60,6 +62,7 @@ public final class ApplicationContext {
                                ProcessService processService, PhoneContactService phoneContactService,
                                NoticeService noticeService, ToolService toolService,
                                RecentService recentService,
+                               UserPreferencesService userPreferencesService,
                                DashboardService dashboardService, SearchService searchService,
                                SecurityService securityService, LogService logService,
                                BackupService backupService, AutoSaveService autoSaveService,
@@ -76,6 +79,7 @@ public final class ApplicationContext {
         this.noticeService = noticeService;
         this.toolService = toolService;
         this.recentService = recentService;
+        this.userPreferencesService = userPreferencesService;
         this.dashboardService = dashboardService;
         this.searchService = searchService;
         this.securityService = securityService;
@@ -95,7 +99,8 @@ public final class ApplicationContext {
         LogService logService = LogService.forDataDirectory(dataDirectory);
         FolderRepository folderRepository = new JsonFolderRepository(dataDirectory, objectMapper);
         ProcessRepository processRepository = new JsonProcessRepository(dataDirectory, objectMapper);
-        RecentRepository recentRepository = new JsonRecentRepository(dataDirectory, objectMapper);
+        String windowsUser = System.getProperty("user.name", "unknown");
+        RecentRepository recentRepository = new JsonRecentRepository(UserPreferencesService.userDirectory(dataDirectory, windowsUser), objectMapper);
         PhoneContactRepository phoneContactRepository = new JsonPhoneContactRepository(dataDirectory, objectMapper);
         NoticeRepository noticeRepository = new JsonNoticeRepository(dataDirectory, objectMapper);
         ToolRepository toolRepository = new JsonToolRepository(dataDirectory, objectMapper);
@@ -104,8 +109,9 @@ public final class ApplicationContext {
         PhoneContactService phoneContactService = new PhoneContactService(phoneContactRepository, logService);
         NoticeService noticeService = new NoticeService(noticeRepository, logService);
         ToolService toolService = new ToolService(toolRepository, logService);
+        UserPreferencesService userPreferencesService = new UserPreferencesService(dataDirectory, objectMapper);
         RecentService recentService = new RecentService(recentRepository, processRepository);
-        DashboardService dashboardService = new DashboardService(folderService, processService, phoneContactService, noticeService, toolService, recentService);
+        DashboardService dashboardService = new DashboardService(folderService, processService, phoneContactService, noticeService, toolService, recentService, userPreferencesService);
         SearchService searchService = new SearchService(processRepository, folderRepository, phoneContactRepository, noticeRepository, toolRepository);
         SecurityService securityService = new SecurityService(configuration);
         BackupService backupService = new BackupService(dataDirectory, logService);
@@ -114,7 +120,7 @@ public final class ApplicationContext {
         AutoClickerService autoClickerService = new AutoClickerService();
         return new ApplicationContext(dataDirectory, configuration, configManager, new ApplicationState(),
                 eventBus, folderService, processService, phoneContactService, noticeService, toolService,
-                recentService, dashboardService,
+                recentService, userPreferencesService, dashboardService,
                 searchService, securityService, logService, backupService, autoSaveService,
                 workspaceWatcherService, autoClickerService);
     }
@@ -130,6 +136,7 @@ public final class ApplicationContext {
     public NoticeService getNoticeService() { return noticeService; }
     public ToolService getToolService() { return toolService; }
     public RecentService getRecentService() { return recentService; }
+    public UserPreferencesService getUserPreferencesService() { return userPreferencesService; }
     public DashboardService getDashboardService() { return dashboardService; }
     public SearchService getSearchService() { return searchService; }
     public SecurityService getSecurityService() { return securityService; }

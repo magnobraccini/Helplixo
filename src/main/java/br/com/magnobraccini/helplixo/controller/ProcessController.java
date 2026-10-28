@@ -8,6 +8,7 @@ import br.com.magnobraccini.helplixo.model.ProcessStep;
 import br.com.magnobraccini.helplixo.service.FolderService;
 import br.com.magnobraccini.helplixo.service.ProcessService;
 import br.com.magnobraccini.helplixo.service.RecentService;
+import br.com.magnobraccini.helplixo.service.UserPreferencesService;
 import br.com.magnobraccini.helplixo.service.WorkspaceWatcherService;
 import br.com.magnobraccini.helplixo.view.dialogs.NewFolderDialog;
 import br.com.magnobraccini.helplixo.view.dialogs.MoveToFolderDialog;
@@ -30,6 +31,7 @@ public final class ProcessController {
     private final FolderService folderService;
     private final ProcessService processService;
     private final RecentService recentService;
+    private final UserPreferencesService preferences;
     private final ApplicationState state;
     private final ProcessPanel view;
     private final MainFrame frame;
@@ -42,9 +44,17 @@ public final class ProcessController {
                              RecentService recentService, ApplicationState state,
                              ProcessPanel view, MainFrame frame, LogService logService,
                              WorkspaceWatcherService workspaceWatcherService) {
+        this(folderService, processService, recentService, state, view, frame, logService, workspaceWatcherService, null);
+    }
+
+    public ProcessController(FolderService folderService, ProcessService processService,
+                             RecentService recentService, ApplicationState state,
+                             ProcessPanel view, MainFrame frame, LogService logService,
+                             WorkspaceWatcherService workspaceWatcherService, UserPreferencesService preferences) {
         this.folderService = folderService;
         this.processService = processService;
         this.recentService = recentService;
+        this.preferences = preferences;
         this.state = state;
         this.view = view;
         this.frame = frame;
@@ -69,8 +79,13 @@ public final class ProcessController {
         List<Folder> folders = folderService.findAll();
         Map<UUID, List<ProcessDocument>> processes = new HashMap<>();
         folders.forEach(folder -> processes.put(folder.getId(), processService.findByFolderId(folder.getId())));
-        view.renderTree(folders, processes, folderService.findFavorites(),
-                processService.findFavorites(50), recentService.findRecentProcesses(20));
+        if (preferences != null) {
+            folders.forEach(f -> f.setFavorite(preferences.isFavorite("folder", f.getId())));
+            processes.values().stream().flatMap(List::stream)
+                    .forEach(p -> p.setFavorite(preferences.isFavorite("process", p.getId())));
+        }
+        view.renderTree(folders, processes, folders.stream().filter(Folder::isFavorite).toList(),
+                processes.values().stream().flatMap(List::stream).filter(ProcessDocument::isFavorite).limit(50).toList(), recentService.findRecentProcesses(20));
         view.setEditMode(state.isEditMode());
         frame.getStatusBar().setMessage("Base atualizada");
         frame.getStatusBar().setTotalItems(processService.count());
@@ -81,6 +96,7 @@ public final class ProcessController {
 
     public void showProcess(ProcessDocument process) {
         ProcessDocument current = processService.findById(process.getId()).orElse(process);
+        if (preferences != null) current.setFavorite(preferences.isFavorite("process", current.getId()));
         state.setSelectedFolderId(current.getFolderId());
         state.setSelectedProcessId(current.getId());
         recentService.registerOpened(current.getId());
@@ -90,6 +106,7 @@ public final class ProcessController {
 
     public void showFolder(Folder folder) {
         Folder current = folderService.findById(folder.getId()).orElse(folder);
+        if (preferences != null) current.setFavorite(preferences.isFavorite("folder", current.getId()));
         state.setSelectedFolderId(current.getId());
         state.setSelectedProcessId(null);
         view.renderFolder(current, breadcrumbFor(current));
@@ -340,12 +357,16 @@ public final class ProcessController {
         Object selected = view.getSelectedObject();
         try {
             if (selected instanceof Folder folder) {
-                Folder updated = folderService.toggleFavorite(folder.getId());
+                Folder updated = folderService.findById(folder.getId()).orElse(folder);
+                if (preferences != null) updated.setFavorite(preferences.toggleFavorite("folder", folder.getId()));
+                else updated = folderService.toggleFavorite(folder.getId());
                 refreshTree();
                 view.selectFolder(updated.getId());
                 showFolder(updated);
             } else if (selected instanceof ProcessDocument process) {
-                ProcessDocument updated = processService.toggleFavorite(process.getId());
+                ProcessDocument updated = processService.findById(process.getId()).orElse(process);
+                if (preferences != null) updated.setFavorite(preferences.toggleFavorite("process", process.getId()));
+                else updated = processService.toggleFavorite(process.getId());
                 refreshTree();
                 view.selectProcess(updated.getId());
                 showProcess(updated);
