@@ -1,13 +1,16 @@
 package br.com.magnobraccini.helplixo.repository.json;
 
 import br.com.magnobraccini.helplixo.model.ProcessDocument;
+import br.com.magnobraccini.helplixo.model.ProcessStep;
 import br.com.magnobraccini.helplixo.repository.ProcessRepository;
 import br.com.magnobraccini.helplixo.util.TextNormalizer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -15,13 +18,17 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 public final class JsonProcessRepository implements ProcessRepository {
+    private static final Path LEGACY_BACKUP = Path.of("backups", "migrations", "steps-rich-text-v1");
+    private final Path dataDirectory;
     private final Path processesDirectory;
     private final ObjectMapper objectMapper;
 
     public JsonProcessRepository(Path dataDirectory, ObjectMapper objectMapper) {
+        this.dataDirectory = dataDirectory;
         this.processesDirectory = dataDirectory.resolve("processes");
         this.objectMapper = objectMapper;
         ensureDirectory();
+        migrateLegacySteps();
     }
 
     @Override
@@ -123,6 +130,74 @@ public final class JsonProcessRepository implements ProcessRepository {
         } catch (IOException exception) {
             throw new IllegalStateException("Arquivo de processo inválido: " + path.getFileName(), exception);
         }
+    }
+
+    /** Migrate the original structured steps to rich-text HTML once, retaining a private backup. */
+    private void migrateLegacySteps() {
+        Path backupDirectory = dataDirectory.resolve(LEGACY_BACKUP);
+        try (Stream<Path> paths = Files.list(processesDirectory)) {
+            for (Path path : paths.filter(file -> file.getFileName().toString().endsWith(".json")).toList()) {
+                ProcessDocument process = read(path);
+                List<ProcessStep> legacySteps = process.getSteps();
+                if (legacySteps == null || legacySteps.isEmpty()) {
+                    continue;
+                }
+
+                Files.createDirectories(backupDirectory);
+                Path backup = backupDirectory.resolve(path.getFileName());
+                try {
+                    Files.copy(path, backup);
+                } catch (java.nio.file.FileAlreadyExistsException alreadyBackedUp) {
+                    // Preserve the first pre-migration snapshot if startup is repeated.
+                }
+
+                if (process.getStepsHtml() == null || process.getStepsHtml().isBlank()) {
+                    process.setStepsHtml(legacyStepsAsHtml(legacySteps));
+                }
+                process.setSteps(List.of());
+                Path temporary = Files.createTempFile(processesDirectory, path.getFileName().toString(), ".migrating");
+                try {
+                    objectMapper.writerWithDefaultPrettyPrinter().writeValue(temporary.toFile(), process);
+                    try {
+                        Files.move(temporary, path, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+                    } catch (AtomicMoveNotSupportedException unsupported) {
+                        Files.move(temporary, path, StandardCopyOption.REPLACE_EXISTING);
+                    }
+                } finally {
+                    Files.deleteIfExists(temporary);
+                }
+            }
+        } catch (IOException exception) {
+            throw new IllegalStateException("Não foi possível atualizar o formato dos passos dos processos.", exception);
+        }
+    }
+
+    private String legacyStepsAsHtml(List<ProcessStep> steps) {
+        StringBuilder html = new StringBuilder();
+        for (ProcessStep step : steps) {
+            html.append("<p><b>").append(escapeHtml(safe(step.getTitle()))).append("</b>");
+            if (!safe(step.getDescription()).isBlank()) {
+                html.append("<br>").append(escapeHtml(step.getDescription()).replace("\r\n", "\n").replace("\n", "<br>"));
+            }
+            if (!safe(step.getExpectedResult()).isBlank()) {
+                html.append("<br><i>Resultado esperado: ").append(escapeHtml(step.getExpectedResult()))
+                        .append("</i>");
+            }
+            if (step.getChecklist() != null) {
+                for (String item : step.getChecklist()) {
+                    if (!safe(item).isBlank()) {
+                        html.append("<br>• ").append(escapeHtml(item));
+                    }
+                }
+            }
+            html.append("</p>");
+        }
+        return html.toString();
+    }
+
+    private String escapeHtml(String value) {
+        return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                .replace("\"", "&quot;").replace("'", "&#39;");
     }
 
     private String searchableText(ProcessDocument process) {

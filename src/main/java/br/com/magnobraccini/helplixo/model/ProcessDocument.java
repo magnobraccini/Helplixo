@@ -20,6 +20,7 @@ public class ProcessDocument {
     private String category;
     private List<String> tags = new ArrayList<>();
     private List<ProcessStep> steps = new ArrayList<>();
+    private String stepsHtml;
     private List<ContentBlock> content = new ArrayList<>();
     private String observations;
     private List<String> links = new ArrayList<>();
@@ -66,6 +67,8 @@ public class ProcessDocument {
     public void setTags(List<String> tags) { this.tags = tags; }
     public List<ProcessStep> getSteps() { return steps; }
     public void setSteps(List<ProcessStep> steps) { this.steps = steps; }
+    public String getStepsHtml() { return stepsHtml; }
+    public void setStepsHtml(String stepsHtml) { this.stepsHtml = stepsHtml; }
     public List<ContentBlock> getContent() { return content; }
     public void setContent(List<ContentBlock> content) { this.content = content; }
     public String getObservations() { return observations; }

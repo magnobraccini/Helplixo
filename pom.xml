@@ -6,7 +6,7 @@
 
     <groupId>br.com.magnobraccini</groupId>
     <artifactId>helplixo</artifactId>
-    <version>0.4.0-SNAPSHOT</version>
+    <version>0.5.0</version>
     <name>Helplixo</name>
     <description>Central de conhecimento e documentação interna de TI.</description>
 

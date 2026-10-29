@@ -4,7 +4,6 @@ import br.com.magnobraccini.helplixo.core.ApplicationState;
 import br.com.magnobraccini.helplixo.logging.LogService;
 import br.com.magnobraccini.helplixo.model.Folder;
 import br.com.magnobraccini.helplixo.model.ProcessDocument;
-import br.com.magnobraccini.helplixo.model.ProcessStep;
 import br.com.magnobraccini.helplixo.service.FolderService;
 import br.com.magnobraccini.helplixo.service.ProcessService;
 import br.com.magnobraccini.helplixo.service.RecentService;
@@ -88,7 +87,6 @@ public final class ProcessController {
                 processes.values().stream().flatMap(List::stream).filter(ProcessDocument::isFavorite).limit(50).toList(), recentService.findRecentProcesses(20));
         view.setEditMode(state.isEditMode());
         frame.getStatusBar().setMessage("Base atualizada");
-        frame.getStatusBar().setTotalItems(processService.count());
         if (workspaceWatcherService != null) {
             workspaceWatcherService.acknowledge();
         }
@@ -419,25 +417,13 @@ public final class ProcessController {
         process.setObjective(clean(data.objective()));
         process.setPrerequisites(clean(data.prerequisites()));
         process.setResponsible(clean(data.responsible()));
+        process.setCategory(clean(data.category()));
         process.setTags(splitCommaSeparated(data.tags()));
         process.setObservations(clean(data.observations()));
         process.setLinks(splitLines(data.links()));
-        process.setSteps(parseSteps(data.steps()));
+        process.setStepsHtml(data.steps());
+        process.setSteps(List.of());
         process.setContent(data.content());
-    }
-
-    private List<ProcessStep> parseSteps(String raw) {
-        List<ProcessStep> steps = new ArrayList<>();
-        int number = 1;
-        for (String line : splitLines(raw)) {
-            String[] parts = line.split("\\s*::\\s*", 2);
-            String title = parts[0].trim();
-            String description = parts.length > 1 ? parts[1].trim() : "";
-            if (!title.isBlank()) {
-                steps.add(ProcessStep.create(number++, title, description));
-            }
-        }
-        return steps;
     }
 
     private List<String> splitCommaSeparated(String raw) {

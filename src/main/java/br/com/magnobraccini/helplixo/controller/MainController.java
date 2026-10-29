@@ -137,7 +137,6 @@ public final class MainController {
         frame.getSettingsPanel().onOpenDataFolder(this::openDataFolder);
         frame.getSettingsPanel().onExport(this::exportData);
         frame.getSettingsPanel().onImport(this::runRestoreBackup);
-        frame.getStatusBar().onOpenSettings(() -> navigate(AppSection.SETTINGS));
         frame.getToolPanel().onAutoClicker(this::openAutoClickerControls);
         state.addPropertyChangeListener(event -> {
             if ("editMode".equals(event.getPropertyName())) {

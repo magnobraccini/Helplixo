@@ -53,10 +53,14 @@ public final class ContentBlockEditorPanel extends JPanel {
         add(buildToolbar(), BorderLayout.NORTH);
 
         blocksContainer.setLayout(new BoxLayout(blocksContainer, BoxLayout.Y_AXIS));
-        blocksContainer.setOpaque(false);
+        blocksContainer.setOpaque(true);
+        blocksContainer.setBackground(Palette.CONTENT_BACKGROUND);
         JScrollPane scrollPane = new JScrollPane(blocksContainer);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder());
-        scrollPane.setPreferredSize(new Dimension(200, 320));
+        scrollPane.setBorder(BorderFactory.createLineBorder(Palette.CONTENT_BORDER, 1, true));
+        scrollPane.setPreferredSize(new Dimension(200, 190));
+        scrollPane.setBackground(Palette.CONTENT_BACKGROUND);
+        scrollPane.getViewport().setBackground(Palette.CONTENT_BACKGROUND);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
         add(scrollPane, BorderLayout.CENTER);
     }
 
@@ -85,6 +89,13 @@ public final class ContentBlockEditorPanel extends JPanel {
         button.setFocusable(false);
         button.putClientProperty("JButton.buttonType", "toolBarButton");
         button.setFont(button.getFont().deriveFont(12f));
+        button.setOpaque(true);
+        button.setForeground(Palette.CONTENT_TEXT_PRIMARY);
+        button.setBackground(Palette.CONTENT_BACKGROUND);
+        button.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(Palette.CONTENT_BORDER, 1, true),
+                BorderFactory.createEmptyBorder(5, 8, 5, 8)));
+        button.setMargin(new Insets(2, 4, 2, 4));
         button.addActionListener(event -> addBlock(ContentBlock.create(type)));
         return button;
     }

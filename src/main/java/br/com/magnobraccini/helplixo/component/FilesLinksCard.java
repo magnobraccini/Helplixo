@@ -35,7 +35,7 @@ public final class FilesLinksCard extends JPanel {
         setOpaque(true);
         setBackground(Palette.CONTENT_BACKGROUND);
         setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(Palette.CONTENT_BORDER, 1, true),
+                BorderFactory.createLineBorder(Palette.SIDEBAR_BORDER, 1, true),
                 BorderFactory.createEmptyBorder(12, 14, 12, 14)));
 
         JLabel title = new JLabel("Arquivos / Links");

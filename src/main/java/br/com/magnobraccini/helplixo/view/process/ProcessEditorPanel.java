@@ -1,7 +1,6 @@
 package br.com.magnobraccini.helplixo.view.process;
 
 import br.com.magnobraccini.helplixo.model.ProcessDocument;
-import br.com.magnobraccini.helplixo.model.ProcessStep;
 import br.com.magnobraccini.helplixo.theme.Palette;
 
 import javax.swing.AbstractAction;
@@ -16,6 +15,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.JToggleButton;
 import javax.swing.KeyStroke;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -27,20 +27,19 @@ import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
+import java.awt.GridLayout;
 import java.awt.Insets;
+import java.awt.Dimension;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
-import java.util.stream.Collectors;
 
 /**
  * Formulário de edição de processo. Reorganizado em seções com cabeçalho (Conteúdo, Detalhes,
  * Passos, Blocos, Observações e Links) para deixar de parecer uma pilha de {@code JTextArea}s —
- * mas cada campo continua exatamente o mesmo componente Swing de antes, então {@link #fill} e
- * {@link #readData()} não mudaram de contrato.
+ * Passos usa um editor visual rico; os demais campos estruturados continuam com os componentes Swing
+ * existentes e {@link #readData()} mantém seu contrato para o controlador.
  */
 public final class ProcessEditorPanel extends JPanel {
     private final ProcessHeaderPanel header = new ProcessHeaderPanel();
@@ -48,14 +47,16 @@ public final class ProcessEditorPanel extends JPanel {
     private final JTextArea objectiveArea = area(3);
     private final JTextArea prerequisitesArea = area(3);
     private final JTextField responsibleField = new JTextField();
+    private final JTextField categoryField = new JTextField();
     private final JTextField tagsField = new JTextField();
-    private final JTextArea stepsArea = area(8);
+    private final RichTextEditorPanel stepsEditor = new RichTextEditorPanel();
     private final ContentBlockEditorPanel contentEditor = new ContentBlockEditorPanel();
     private final JTextArea observationsArea = area(4);
     private final JTextArea linksArea = area(4);
     private final UndoManager undoManager = new UndoManager();
     private Runnable changeListener = () -> { };
     private boolean filling;
+    private final java.util.List<Runnable> collapseSections = new java.util.ArrayList<>();
 
     public ProcessEditorPanel() {
         setLayout(new BorderLayout());
@@ -75,22 +76,27 @@ public final class ProcessEditorPanel extends JPanel {
                 labeled("Objetivo", scroll(objectiveArea)),
                 labeled("Pré-requisitos", scroll(prerequisitesArea)),
                 labeled("Responsável", responsibleField),
+                labeled("Categoria", categoryField),
                 labeled("Tags (separadas por vírgula)", tagsField)));
         stack.add(verticalGap());
         stack.add(section("Passos",
-                labeled("Uma linha por passo: Título :: Descrição", scroll(stepsArea))));
+                labeled("Digite os procedimentos e use a barra para aplicar formatação ou listas. Enter cria um parágrafo.", stepsEditor)));
         stack.add(verticalGap());
-        stack.add(section("Blocos (estilo Notion)", contentEditor));
+        stack.add(section("Blocos", contentEditor));
         stack.add(verticalGap());
-        stack.add(section("Observações e links",
-                labeled("Observações", scroll(observationsArea)),
-                linksField()));
+        JPanel notesGrid = new JPanel(new GridLayout(1, 2, 16, 0));
+        notesGrid.setOpaque(false);
+        notesGrid.add(labeled("Observações", scroll(observationsArea)));
+        notesGrid.add(linksField());
+        stack.add(section("Notas e links", notesGrid));
 
         JScrollPane formScroll = new JScrollPane(stack);
         formScroll.setBorder(BorderFactory.createEmptyBorder());
         formScroll.getViewport().setBackground(Palette.CONTENT_BACKGROUND);
         formScroll.getVerticalScrollBar().setUnitIncrement(16);
+        formScroll.setWheelScrollingEnabled(true);
         add(formScroll, BorderLayout.CENTER);
+        installPageWheelRouting(stack, formScroll);
 
         applyLightSurface(this);
         installChangeTracking();
@@ -107,13 +113,14 @@ public final class ProcessEditorPanel extends JPanel {
         objectiveArea.setText(safe(process.getObjective()));
         prerequisitesArea.setText(safe(process.getPrerequisites()));
         responsibleField.setText(safe(process.getResponsible()));
+        categoryField.setText(safe(process.getCategory()));
         tagsField.setText(String.join(", ", process.getTags()));
         observationsArea.setText(safe(process.getObservations()));
         linksArea.setText(String.join("\n", process.getLinks()));
-        stepsArea.setText(process.getSteps().stream()
-                .map(this::formatStep)
-                .collect(Collectors.joining("\n")));
+        String stepsHtml = safe(process.getStepsHtml());
+        stepsEditor.setHtml(stepsHtml.isBlank() ? RichTextHtml.fromLegacySteps(process.getSteps()) : stepsHtml);
         contentEditor.setBlocks(process.getContent());
+        collapseSections.forEach(Runnable::run);
         undoManager.discardAllEdits();
         header.getTitleField().requestFocusInWindow();
         filling = false;
@@ -126,10 +133,11 @@ public final class ProcessEditorPanel extends JPanel {
                 objectiveArea.getText(),
                 prerequisitesArea.getText(),
                 responsibleField.getText(),
+                categoryField.getText(),
                 tagsField.getText(),
                 observationsArea.getText(),
                 linksArea.getText(),
-                stepsArea.getText(),
+                stepsEditor.getHtml(),
                 contentEditor.getBlocks());
     }
 
@@ -147,26 +155,61 @@ public final class ProcessEditorPanel extends JPanel {
         JPanel card = new JPanel();
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBackground(Palette.CONTENT_BACKGROUND);
-        card.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(Palette.CONTENT_BORDER, 1, true),
-                BorderFactory.createEmptyBorder(12, 14, 14, 14)));
+        card.setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
         card.setAlignmentX(LEFT_ALIGNMENT);
 
-        JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 13f));
-        titleLabel.setForeground(Palette.CONTENT_TEXT_PRIMARY);
-        titleLabel.setAlignmentX(LEFT_ALIGNMENT);
-        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
-        card.add(titleLabel);
+        JPanel body = new JPanel();
+        body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
+        body.setOpaque(false);
+        body.setAlignmentX(LEFT_ALIGNMENT);
+        body.setVisible(false);
 
         for (Component row : rows) {
             if (row instanceof JComponent jComponent) {
                 jComponent.setAlignmentX(LEFT_ALIGNMENT);
             }
-            card.add(row);
-            card.add(Box.createVerticalStrut(8));
+            body.add(row);
+            body.add(Box.createVerticalStrut(8));
         }
+        JToggleButton toggle = new JToggleButton("▸  " + title, false);
+        toggle.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        toggle.setFocusable(false);
+        toggle.setOpaque(false);
+        toggle.setContentAreaFilled(false);
+        toggle.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
+        toggle.setFont(toggle.getFont().deriveFont(Font.BOLD, 13f));
+        toggle.setForeground(Palette.CONTENT_TEXT_PRIMARY);
+        toggle.addActionListener(event -> {
+            body.setVisible(toggle.isSelected());
+            updateSectionToggle(toggle, body, title);
+            card.revalidate();
+            card.repaint();
+        });
+        collapseSections.add(() -> {
+            toggle.setSelected(false);
+            body.setVisible(false);
+            updateSectionToggle(toggle, body, title);
+        });
+        card.add(toggle);
+        card.add(body);
         return card;
+    }
+
+    private void updateSectionToggle(JToggleButton toggle, JPanel body, String title) {
+        toggle.setText((body.isVisible() ? "▾  " : "▸  ") + title);
+    }
+
+    private void installPageWheelRouting(Component component, JScrollPane formScroll) {
+        component.addMouseWheelListener(event -> {
+            var bar = formScroll.getVerticalScrollBar();
+            int direction = event.getWheelRotation();
+            int next = bar.getValue() + direction * bar.getUnitIncrement(direction) * Math.max(1, event.getScrollAmount());
+            bar.setValue(Math.max(bar.getMinimum(), Math.min(next, bar.getMaximum() - bar.getVisibleAmount())));
+            event.consume();
+        });
+        if (component instanceof Container container) {
+            for (Component child : container.getComponents()) installPageWheelRouting(child, formScroll);
+        }
     }
 
     private JPanel labeled(String label, Component field) {
@@ -233,7 +276,10 @@ public final class ProcessEditorPanel extends JPanel {
 
     private void applyLightSurface(Container container) {
         for (Component component : container.getComponents()) {
-            if (component instanceof JTextField field) {
+            if (component instanceof RichTextEditorPanel) {
+                // O editor rico mantém sua própria faixa escura e a página clara de edição.
+                continue;
+            } else if (component instanceof JTextField field) {
                 field.setBackground(Palette.CONTENT_BACKGROUND);
                 field.setForeground(Palette.CONTENT_TEXT_PRIMARY);
                 field.setCaretColor(Palette.CONTENT_TEXT_PRIMARY);
@@ -263,8 +309,9 @@ public final class ProcessEditorPanel extends JPanel {
         objectiveArea.getDocument().addDocumentListener(listener);
         prerequisitesArea.getDocument().addDocumentListener(listener);
         responsibleField.getDocument().addDocumentListener(listener);
+        categoryField.getDocument().addDocumentListener(listener);
         tagsField.getDocument().addDocumentListener(listener);
-        stepsArea.getDocument().addDocumentListener(listener);
+        stepsEditor.getEditor().getDocument().addDocumentListener(listener);
         observationsArea.getDocument().addDocumentListener(listener);
         linksArea.getDocument().addDocumentListener(listener);
         contentEditor.onChange(this::changed);
@@ -273,7 +320,7 @@ public final class ProcessEditorPanel extends JPanel {
     private void installUndoSupport() {
         JTextComponent[] textComponents = {
                 header.getTitleField(), descriptionArea, objectiveArea, prerequisitesArea,
-                responsibleField, tagsField, stepsArea, observationsArea, linksArea
+                responsibleField, categoryField, tagsField, stepsEditor.getEditor(), observationsArea, linksArea
         };
         for (JTextComponent component : textComponents) {
             component.getDocument().addUndoableEditListener(event -> undoManager.addEdit(event.getEdit()));
@@ -332,12 +379,6 @@ public final class ProcessEditorPanel extends JPanel {
         }
     }
 
-    private String formatStep(ProcessStep step) {
-        String title = safe(step.getTitle()).replace("\n", " ");
-        String description = safe(step.getDescription()).replace("\n", " ");
-        return description.isBlank() ? title : title + " :: " + description;
-    }
-
     private static JTextArea area(int rows) {
         JTextArea area = new JTextArea(rows, 30);
         area.setLineWrap(true);
@@ -347,7 +388,9 @@ public final class ProcessEditorPanel extends JPanel {
 
     private static JScrollPane scroll(JTextArea area) {
         JScrollPane scrollPane = new JScrollPane(area);
-        scrollPane.setPreferredSize(new java.awt.Dimension(200, Math.max(80, area.getRows() * 22)));
+        scrollPane.setPreferredSize(new Dimension(200, Math.max(76, area.getRows() * 22)));
+        scrollPane.getViewport().setBackground(Palette.CONTENT_BACKGROUND);
+        scrollPane.setBackground(Palette.CONTENT_BACKGROUND);
         scrollPane.setAlignmentX(LEFT_ALIGNMENT);
         return scrollPane;
     }

@@ -11,11 +11,16 @@ import br.com.magnobraccini.helplixo.theme.Palette;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.JButton;
 import javax.swing.JEditorPane;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JPopupMenu;
 import javax.swing.JMenuItem;
+import javax.swing.JTextArea;
+import javax.swing.SwingConstants;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -43,6 +48,8 @@ public final class ProcessViewerPanel extends JPanel {
     private final JEditorPane documentPane = new JEditorPane();
     private final FilesLinksCard filesLinksCard = new FilesLinksCard();
     private final InformationCard informationCard = new InformationCard();
+    private final JPanel blocksCard = new JPanel(new BorderLayout(0, 8));
+    private final JPanel blockLinks = new JPanel();
 
     public ProcessViewerPanel() {
         setLayout(new BorderLayout(16, 0));
@@ -73,8 +80,11 @@ public final class ProcessViewerPanel extends JPanel {
         side.setOpaque(false);
         side.setLayout(new BoxLayout(side, BoxLayout.Y_AXIS));
         filesLinksCard.setAlignmentX(LEFT_ALIGNMENT);
+        blocksCard.setAlignmentX(LEFT_ALIGNMENT);
         informationCard.setAlignmentX(LEFT_ALIGNMENT);
         side.add(filesLinksCard);
+        side.add(Box.createVerticalStrut(12));
+        side.add(blocksCard);
         side.add(Box.createVerticalStrut(12));
         side.add(informationCard);
         side.add(Box.createVerticalGlue());
@@ -92,9 +102,11 @@ public final class ProcessViewerPanel extends JPanel {
         header.setEditingMode(false);
         header.setTitle(process.getTitle());
         renderDocument(buildBody(process));
+        renderBlockAccess(process.getContent());
+        blocksCard.setVisible(process.getContent() != null && !process.getContent().isEmpty());
         filesLinksCard.setVisible(true);
         informationCard.setVisible(true);
-        filesLinksCard.render(process.getLinks());
+        filesLinksCard.render(linksForSidebar(process));
         informationCard.render(process);
     }
 
@@ -108,6 +120,7 @@ public final class ProcessViewerPanel extends JPanel {
         body.append("<hr/><p>Selecione um processo ou use a barra de ferramentas para criar conteúdo.</p>");
         renderDocument(body.toString());
         filesLinksCard.setVisible(false);
+        blocksCard.setVisible(false);
         informationCard.setVisible(false);
     }
 
@@ -179,7 +192,7 @@ public final class ProcessViewerPanel extends JPanel {
         if (openList != null) {
             html.append(openList == ContentBlockType.BULLET_LIST ? "</ul>" : "</ol>");
         }
-        appendLinks(html, process);
+        appendSteps(html, process);
         return html.toString();
     }
 
@@ -231,26 +244,154 @@ public final class ProcessViewerPanel extends JPanel {
         }
         section(html, "Objetivo", process.getObjective());
         section(html, "Pré-requisitos", process.getPrerequisites());
-        if (!process.getSteps().isEmpty()) {
-            html.append("<h2>Passos</h2><ol>");
-            for (ProcessStep step : process.getSteps()) {
-                html.append("<li><b>").append(escape(step.getTitle())).append("</b>");
-                if (!safe(step.getDescription()).isBlank()) {
-                    html.append("<br/>").append(multiline(step.getDescription()));
-                }
-                if (!safe(step.getExpectedResult()).isBlank()) {
-                    html.append("<br/><i>Resultado esperado: ").append(multiline(step.getExpectedResult()))
-                            .append("</i>");
-                }
-                html.append("</li>");
-            }
-            html.append("</ol>");
-        }
+        appendSteps(html, process);
         if (!safe(process.getObservations()).isBlank()) {
             callout(html, "callout-info", "ℹ Observação", multiline(process.getObservations()));
         }
-        appendLinks(html, process);
         return html.toString();
+    }
+
+    private void appendSteps(StringBuilder html, ProcessDocument process) {
+        String richSteps = RichTextHtml.sanitize(process.getStepsHtml());
+        if (!richSteps.isBlank()) {
+            html.append("<h2>Passos</h2>").append(numberedRichSteps(richSteps));
+            return;
+        }
+        if (process.getSteps() == null || process.getSteps().isEmpty()) return;
+        html.append("<h2>Passos</h2><ol>");
+        for (ProcessStep step : process.getSteps()) {
+            html.append("<li><b>").append(escape(step.getTitle())).append("</b>");
+            if (!safe(step.getDescription()).isBlank()) html.append("<br/>").append(multiline(step.getDescription()));
+            if (!safe(step.getExpectedResult()).isBlank()) {
+                html.append("<br/><i>Resultado esperado: ").append(multiline(step.getExpectedResult())).append("</i>");
+            }
+            html.append("</li>");
+        }
+        html.append("</ol>");
+    }
+
+    private String numberedRichSteps(String safeHtml) {
+        if (safeHtml.contains("<ol>") || safeHtml.contains("<ul>")) return safeHtml;
+        // Parágrafos permanecem parágrafos. Só listas escolhidas com a ferramenta
+        // de numeração devem exibir marcadores automáticos.
+        return safeHtml;
+    }
+
+    private java.util.List<String> linksForSidebar(ProcessDocument process) {
+        java.util.List<String> links = new java.util.ArrayList<>(process.getLinks());
+        if (process.getContent() == null) return links;
+        java.util.Set<String> blockLinks = new java.util.HashSet<>();
+        for (ContentBlock block : process.getContent()) {
+            if (block.getType() == ContentBlockType.LINK && block.getUrl() != null) {
+                blockLinks.add(block.getUrl().trim());
+            }
+        }
+        links.removeIf(link -> blockLinks.contains(link == null ? "" : link.trim()));
+        return links;
+    }
+
+    private void renderBlockAccess(java.util.List<ContentBlock> blocks) {
+        blocksCard.removeAll();
+        blocksCard.setOpaque(true);
+        blocksCard.setBackground(Palette.CONTENT_BACKGROUND);
+        blocksCard.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(Palette.SIDEBAR_BORDER, 1, true),
+                BorderFactory.createEmptyBorder(12, 14, 12, 14)));
+        JLabel title = new JLabel("Blocos do processo");
+        title.setFont(title.getFont().deriveFont(Font.BOLD, 13f));
+        title.setForeground(Palette.CONTENT_TEXT_PRIMARY);
+        blocksCard.add(title, BorderLayout.NORTH);
+        blockLinks.removeAll();
+        blockLinks.setOpaque(false);
+        blockLinks.setLayout(new BoxLayout(blockLinks, BoxLayout.Y_AXIS));
+        if (blocks != null) {
+            int index = 0;
+            for (ContentBlock block : blocks) {
+                final int blockIndex = index++;
+                JButton open = new JButton(blockLabel(block));
+                open.setHorizontalAlignment(SwingConstants.LEFT);
+                open.setToolTipText("Abrir conteúdo do bloco");
+                open.setFocusable(false);
+                open.addActionListener(event -> showBlock(block, blockIndex));
+                blockLinks.add(open);
+                blockLinks.add(Box.createVerticalStrut(4));
+            }
+        }
+        blocksCard.add(blockLinks, BorderLayout.CENTER);
+        blocksCard.revalidate();
+        blocksCard.repaint();
+    }
+
+    private void showBlock(ContentBlock block, int index) {
+        String title = blockTypeLabel(block.getType());
+        String text = safe(block.getText());
+        if (text.isBlank()) text = safe(block.getUrl());
+        java.awt.Color surface = Palette.CONTENT_BACKGROUND;
+        java.awt.Color foreground = Palette.CONTENT_TEXT_PRIMARY;
+        if (block.getType() == ContentBlockType.NOTE) {
+            surface = Palette.NOTE_SURFACE;
+            foreground = Palette.NOTE_SURFACE_TEXT;
+        } else if (block.getType() == ContentBlockType.INFO) {
+            surface = Palette.INFO_SURFACE;
+            foreground = Palette.INFO_SURFACE_TEXT;
+        } else if (block.getType() == ContentBlockType.WARNING) {
+            surface = Palette.WARNING_SURFACE;
+            foreground = Palette.WARNING_SURFACE_TEXT;
+        } else if (block.getType() == ContentBlockType.CODE) {
+            surface = new java.awt.Color(38, 42, 51);
+            foreground = new java.awt.Color(214, 219, 227);
+        }
+        JPanel content = new JPanel(new BorderLayout(0, 10));
+        content.setBackground(surface);
+        content.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(Palette.CONTENT_BORDER, 1, true),
+                BorderFactory.createEmptyBorder(14, 16, 14, 16)));
+        JLabel heading = new JLabel(title);
+        heading.setForeground(foreground);
+        heading.setFont(heading.getFont().deriveFont(Font.BOLD, 16f));
+        content.add(heading, BorderLayout.NORTH);
+        JTextArea textView = new JTextArea(text);
+        textView.setEditable(false);
+        textView.setLineWrap(true);
+        textView.setWrapStyleWord(true);
+        textView.setBackground(surface);
+        textView.setForeground(foreground);
+        textView.setCaretColor(foreground);
+        textView.setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
+        textView.setFont(block.getType() == ContentBlockType.CODE
+                ? new Font(Font.MONOSPACED, Font.PLAIN, 13) : textView.getFont().deriveFont(14f));
+        JScrollPane scroll = new JScrollPane(textView);
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+        scroll.setBackground(surface);
+        scroll.getViewport().setBackground(surface);
+        content.add(scroll, BorderLayout.CENTER);
+        scroll.setPreferredSize(new Dimension(620, 320));
+        JOptionPane.showMessageDialog(this, content,
+                "Bloco " + (index + 1) + " · " + title, JOptionPane.PLAIN_MESSAGE);
+    }
+
+    private String blockLabel(ContentBlock block) {
+        String text = safe(block.getText()).replaceAll("\\s+", " ").trim();
+        if (text.isBlank()) text = safe(block.getUrl()).trim();
+        if (text.isBlank()) text = "Abrir conteúdo";
+        if (text.length() > 48) text = text.substring(0, 45) + "…";
+        return "▸  " + blockTypeLabel(block.getType()) + " — " + text;
+    }
+
+    private String blockTypeLabel(ContentBlockType type) {
+        if (type == null) return "Bloco";
+        return switch (type) {
+            case PARAGRAPH -> "Parágrafo";
+            case HEADING -> "Título";
+            case BULLET_LIST -> "Lista";
+            case NUMBERED_LIST -> "Lista numerada";
+            case CODE -> "Código";
+            case LINK -> "Link";
+            case IMAGE -> "Imagem";
+            case INFO -> "Informação";
+            case WARNING -> "Aviso";
+            case NOTE -> "Observação";
+        };
     }
 
     private void appendLinks(StringBuilder html, ProcessDocument process) {

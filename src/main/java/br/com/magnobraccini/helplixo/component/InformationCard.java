@@ -25,7 +25,7 @@ public final class InformationCard extends JPanel {
         setLayout(new BorderLayout(0, 8));
         setBackground(Palette.CONTENT_BACKGROUND);
         setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(Palette.CONTENT_BORDER, 1, true),
+                BorderFactory.createLineBorder(Palette.SIDEBAR_BORDER, 1, true),
                 BorderFactory.createEmptyBorder(12, 14, 12, 14)));
 
         JLabel title = new JLabel("Informações");

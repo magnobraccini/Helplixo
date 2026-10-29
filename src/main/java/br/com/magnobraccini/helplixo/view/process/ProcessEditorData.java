@@ -10,6 +10,7 @@ public record ProcessEditorData(
         String objective,
         String prerequisites,
         String responsible,
+        String category,
         String tags,
         String observations,
         String links,

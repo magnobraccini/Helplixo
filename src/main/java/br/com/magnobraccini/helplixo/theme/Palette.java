@@ -64,6 +64,8 @@ public final class Palette {
     public static final Color CONTENT_BACKGROUND = Color.WHITE;
     public static final Color CONTENT_SURFACE_ALT = new Color(247, 249, 251);
     public static final Color CONTENT_BORDER = new Color(211, 218, 228);
+    /** Borda um pouco mais marcada para separar os cards do painel lateral claro. */
+    public static final Color SIDEBAR_BORDER = new Color(185, 196, 210);
     public static final Color CONTENT_TEXT_PRIMARY = new Color(28, 37, 49);
     public static final Color CONTENT_TEXT_SECONDARY = new Color(70, 80, 94);
 

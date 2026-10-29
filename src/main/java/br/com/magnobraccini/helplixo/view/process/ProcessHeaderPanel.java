@@ -44,9 +44,7 @@ public final class ProcessHeaderPanel extends JPanel {
         titleField.setCaretColor(Palette.CONTENT_TEXT_PRIMARY);
         titleField.setEditable(false);
         titleField.putClientProperty("JTextField.arc", 8);
-        titleField.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(Palette.CONTENT_BORDER, 1, true),
-                BorderFactory.createEmptyBorder(6, 10, 6, 10)));
+        titleField.setBorder(BorderFactory.createEmptyBorder(6, 0, 6, 0));
 
         titleBlock.setOpaque(false);
         titleBlock.add(titleCaption, BorderLayout.NORTH);

@@ -18,6 +18,12 @@ $env:HELPLIXO_MASTER_PASSWORD = "sua-senha-mestre"
 
 No Windows, use `run-helplixo.bat` ou execute `mvn exec:java` nesta pasta. Os dados locais ficam em `data-dev/` e não devem ser commitados. Sem senha configurada, o modo de edição e a recuperação por senha mestre ficam bloqueados.
 
+Para testar a cópia compilada mais recente no Windows, execute `Abrir-Helplixo-teste.bat`. Ela abre o JAR em `dist/Helplixo-teste-0.5.0.jar` e mantém os dados de teste separados em `data-dev/`.
+
+O editor de passos inclui faixas de ferramentas para fonte e parágrafo, estilos, cores, alinhamento, listas, links, divisores e desfazer/refazer. Parágrafos simples continuam sem numeração automática; a numeração aparece quando uma lista numerada é escolhida.
+
+Na primeira execução da versão 0.5.0, passos do formato estruturado antigo são convertidos para HTML editável. Antes da conversão, cada arquivo original é copiado para `data/backups/migrations/steps-rich-text-v1/`.
+
 Recentes e favoritos são separados automaticamente pelo perfil do Windows em uso, sem tela de login. Processos, ramais e os demais conteúdos permanecem compartilhados no diretório de dados.
 
 ## Compilar
