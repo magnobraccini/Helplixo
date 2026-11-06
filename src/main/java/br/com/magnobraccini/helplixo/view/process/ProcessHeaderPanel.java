@@ -3,77 +3,115 @@ package br.com.magnobraccini.helplixo.view.process;
 import br.com.magnobraccini.helplixo.theme.Palette;
 
 import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JLabel;
+import javax.swing.ButtonGroup;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+import javax.swing.JToggleButton;
+import javax.swing.border.Border;
 import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 
 /**
- * Cabeçalho reaproveitado por {@link ProcessViewerPanel} e {@link ProcessEditorPanel}: campo de
- * título com moldura (rótulo "Título" acima, igual à referência visual) e o alternador
- * "Visualização / Edição" na mesma linha, à direita. Não contém lógica própria de troca de modo
- * — apenas delega para os callbacks já ligados por {@link ProcessPanel} aos botões reais de
- * Editar/Cancelar da toolbar, para não duplicar comportamento. A estrela de favorito não mora
- * mais aqui — subiu para a barra de breadcrumb, junto do caminho, como na referência.
+ * Cabeçalho comum de {@link ProcessViewerPanel} e {@link ProcessEditorPanel}: o título como
+ * manchete do documento e, à direita, o seletor Visualizar / Editar. O título tem a mesma fonte
+ * e posição nos dois modos — ao editar ele apenas ganha um sublinhado de campo —, então alternar
+ * entre ler e editar não faz a tela "pular". A troca de modo delega para os botões reais de
+ * Editar/Cancelar da barra (ligados por {@link ProcessPanel}), sem duplicar comportamento.
  */
 public final class ProcessHeaderPanel extends JPanel {
-    private final JLabel titleCaption = new JLabel("Título");
-    private final JTextField titleField = new JTextField();
-    private final JButton viewModeButton = new JButton("👁 Visualização");
-    private final JButton editModeButton = new JButton("✎ Edição");
-    private final JPanel modeToggle = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-    private final JPanel titleBlock = new JPanel(new BorderLayout(0, 4));
+    private static final Border READ_BORDER = BorderFactory.createEmptyBorder(4, 0, 6, 0);
+    private static final Border EDIT_BORDER = BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(0, 0, 1, 0, Palette.CONTENT_BORDER),
+            BorderFactory.createEmptyBorder(4, 0, 5, 0));
+    private static final Border FOCUS_BORDER = BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(0, 0, 2, 0, Palette.ACCENT),
+            BorderFactory.createEmptyBorder(4, 0, 4, 0));
 
+    private final JTextField titleField = new JTextField();
+    private final JToggleButton viewModeButton = segment("Visualizar");
+    private final JToggleButton editModeButton = segment("Editar");
+    private final JPanel modeToggle = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+
+    private boolean editingMode;
     private Runnable switchToViewListener = () -> { };
     private Runnable switchToEditListener = () -> { };
 
     public ProcessHeaderPanel() {
-        setLayout(new BorderLayout(16, 0));
+        setLayout(new BorderLayout(24, 0));
         setOpaque(false);
-        setBorder(BorderFactory.createEmptyBorder(0, 0, 14, 0));
+        setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
 
-        titleCaption.setFont(titleCaption.getFont().deriveFont(Font.PLAIN, 12f));
-        titleCaption.setForeground(Palette.CONTENT_TEXT_SECONDARY);
-
-        titleField.setFont(titleField.getFont().deriveFont(Font.BOLD, 16f));
+        titleField.setFont(titleField.getFont().deriveFont(Font.BOLD, 22f));
         titleField.setForeground(Palette.CONTENT_TEXT_PRIMARY);
-        titleField.setBackground(Palette.CONTENT_BACKGROUND);
         titleField.setCaretColor(Palette.CONTENT_TEXT_PRIMARY);
-        titleField.setEditable(false);
-        titleField.putClientProperty("JTextField.arc", 8);
-        titleField.setBorder(BorderFactory.createEmptyBorder(6, 0, 6, 0));
+        titleField.setSelectionColor(new Color(187, 214, 251));
+        titleField.setSelectedTextColor(Palette.CONTENT_TEXT_PRIMARY);
+        titleField.putClientProperty("JTextField.placeholderText", "Dê um título ao processo");
+        titleField.getAccessibleContext().setAccessibleName("Título do processo");
+        titleField.addFocusListener(new FocusAdapter() {
+            @Override public void focusGained(FocusEvent event) { if (titleField.isEditable()) titleField.setBorder(FOCUS_BORDER); }
+            @Override public void focusLost(FocusEvent event) { titleField.setBorder(titleField.isEditable() ? EDIT_BORDER : READ_BORDER); }
+        });
+        setTitleEditable(false);
 
-        titleBlock.setOpaque(false);
-        titleBlock.add(titleCaption, BorderLayout.NORTH);
-        titleBlock.add(titleField, BorderLayout.CENTER);
-        titleBlock.setPreferredSize(new java.awt.Dimension(360, 56));
-
-        viewModeButton.setFocusable(false);
-        editModeButton.setFocusable(false);
-        viewModeButton.putClientProperty("JButton.buttonType", "tab");
-        editModeButton.putClientProperty("JButton.buttonType", "tab");
-        viewModeButton.addActionListener(event -> switchToViewListener.run());
-        editModeButton.addActionListener(event -> switchToEditListener.run());
-        modeToggle.setOpaque(false);
-        modeToggle.add(modeLabel());
+        ButtonGroup group = new ButtonGroup();
+        group.add(viewModeButton);
+        group.add(editModeButton);
+        // Cada cabeçalho pertence a um único modo (o do leitor ou o do editor). Depois do clique,
+        // ele volta a mostrar o próprio modo: se a troca for cancelada (ex.: "Descartar
+        // alterações?" → Não), o seletor não fica mentindo sobre o estado da tela.
+        viewModeButton.addActionListener(event -> { switchToViewListener.run(); restoreMode(); });
+        editModeButton.addActionListener(event -> { switchToEditListener.run(); restoreMode(); });
+        modeToggle.setOpaque(true);
+        modeToggle.setBackground(Palette.CONTENT_SURFACE_ALT);
+        modeToggle.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(Palette.CONTENT_BORDER, 1, true),
+                BorderFactory.createEmptyBorder(2, 2, 2, 2)));
         modeToggle.add(viewModeButton);
         modeToggle.add(editModeButton);
 
-        add(titleBlock, BorderLayout.WEST);
-        add(modeToggle, BorderLayout.EAST);
+        JPanel modeWrapper = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 6));
+        modeWrapper.setOpaque(false);
+        modeWrapper.add(modeToggle);
+
+        add(titleField, BorderLayout.CENTER);
+        add(modeWrapper, BorderLayout.EAST);
+        setEditingMode(false);
     }
 
-    private JLabel modeLabel() {
-        JLabel label = new JLabel("Modo:  ");
-        label.setForeground(Palette.CONTENT_TEXT_SECONDARY);
-        return label;
+    private static JToggleButton segment(String text) {
+        JToggleButton button = new JToggleButton(text);
+        button.setFocusable(false);
+        button.setContentAreaFilled(false);
+        button.setOpaque(true);
+        button.setBorder(BorderFactory.createEmptyBorder(5, 14, 5, 14));
+        button.setFont(button.getFont().deriveFont(Font.PLAIN, 12.5f));
+        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        button.addChangeListener(event -> paintSegment(button));
+        paintSegment(button);
+        return button;
+    }
+
+    private static void paintSegment(JToggleButton button) {
+        boolean selected = button.isSelected();
+        button.setBackground(selected ? Palette.CONTENT_BACKGROUND : Palette.CONTENT_SURFACE_ALT);
+        button.setForeground(!button.isEnabled() && !selected ? new Color(160, 168, 180)
+                : selected ? Palette.CONTENT_TEXT_PRIMARY : Palette.CONTENT_TEXT_SECONDARY);
+        button.setFont(button.getFont().deriveFont(selected ? Font.BOLD : Font.PLAIN));
+        button.setBorder(selected
+                ? BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(Palette.CONTENT_BORDER, 1, true),
+                BorderFactory.createEmptyBorder(4, 13, 4, 13))
+                : BorderFactory.createEmptyBorder(5, 14, 5, 14));
     }
 
     public void setTitle(String title) {
         titleField.setText(title == null ? "" : title);
+        titleField.setCaretPosition(0);
     }
 
     public String getTitleText() {
@@ -85,28 +123,39 @@ public final class ProcessHeaderPanel extends JPanel {
         return titleField;
     }
 
-    /** No visualizador o campo fica com aparência de somente leitura; no editor, editável. */
+    /** No visualizador o título é uma manchete; no editor, o mesmo texto vira um campo sublinhado. */
     public void setTitleEditable(boolean editable) {
         titleField.setEditable(editable);
-        titleField.setBackground(editable ? Palette.CONTENT_BACKGROUND : Palette.CONTENT_SURFACE_ALT);
+        titleField.setFocusable(editable);
+        titleField.setOpaque(false);
+        titleField.setBackground(Palette.CONTENT_BACKGROUND);
+        titleField.setBorder(editable ? EDIT_BORDER : READ_BORDER);
+        titleField.setCursor(Cursor.getPredefinedCursor(editable ? Cursor.TEXT_CURSOR : Cursor.DEFAULT_CURSOR));
     }
 
-    /** Controla se o alternador Visualização/Edição aparece — pastas não têm modo de edição. */
+    /** Controla se o seletor Visualizar/Editar aparece — pastas não têm modo de edição. */
     public void setModeToggleVisible(boolean visible) {
         modeToggle.setVisible(visible);
     }
 
-    /** Marca qual dos dois modos está ativo (o botão ativo fica desabilitado, como uma aba selecionada). */
-    public void setEditingMode(boolean editing) {
-        viewModeButton.setEnabled(editing);
-        editModeButton.setEnabled(!editing);
-        viewModeButton.putClientProperty("JButton.buttonType", editing ? "tab" : "default");
-        editModeButton.putClientProperty("JButton.buttonType", editing ? "default" : "tab");
+    private void restoreMode() {
+        javax.swing.SwingUtilities.invokeLater(() -> setEditingMode(editingMode));
     }
 
-    /** Habilita/desabilita a troca para o modo de edição (ex.: sem permissão de edição). */
+    public void setEditingMode(boolean editing) {
+        editingMode = editing;
+        (editing ? editModeButton : viewModeButton).setSelected(true);
+        paintSegment(viewModeButton);
+        paintSegment(editModeButton);
+    }
+
+    /** Habilita/desabilita a troca para o modo de edição e explica o motivo quando indisponível. */
     public void setEditAvailable(boolean available) {
-        editModeButton.setEnabled(available);
+        editModeButton.setEnabled(available || editModeButton.isSelected());
+        editModeButton.setToolTipText(available ? "Editar este processo (Ctrl+E)"
+                : "Para editar, clique em “Ativar edição” no topo da janela");
+        viewModeButton.setToolTipText("Voltar para a leitura");
+        paintSegment(editModeButton);
     }
 
     public void onSwitchToView(Runnable listener) {
