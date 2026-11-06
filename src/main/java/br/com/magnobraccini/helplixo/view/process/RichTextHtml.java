@@ -15,9 +15,38 @@ import java.util.Set;
 final class RichTextHtml {
     private static final Set<String> ALLOWED = Set.of("p", "div", "b", "strong", "i", "em", "u", "s", "strike",
             "ul", "ol", "li", "h1", "h2", "h3", "h4", "h5", "h6", "blockquote", "pre", "code",
-            "font", "span", "a", "br", "hr");
+            "font", "span", "a", "br", "hr", "sub", "sup");
 
     private RichTextHtml() { }
+
+    /**
+     * Folha de estilo comum do documento de passos. O editor e a visualização usam exatamente as
+     * mesmas regras, para que o que se vê ao editar seja o que se lê depois.
+     */
+    // No CSS do Swing, "pt" corresponde ao tamanho de fonte dos componentes; "px" sai ~30% maior.
+    static String documentCss() {
+        String family = UIFonts.family();
+        return "body { font-family: " + family + ", sans-serif; font-size: 14pt; color: #1c2531; margin: 0; }"
+                + "p { margin-top: 3px; margin-bottom: 7px; }"
+                + "h1 { font-size: 22pt; font-weight: bold; color: #1c2531; margin-top: 16px; margin-bottom: 6px; }"
+                + "h2 { font-size: 18pt; font-weight: bold; color: #1c2531; margin-top: 14px; margin-bottom: 6px; }"
+                + "h3 { font-size: 15pt; font-weight: bold; color: #2b3a4d; margin-top: 12px; margin-bottom: 4px; }"
+                + "ul, ol { margin-top: 2px; margin-bottom: 8px; margin-left: 26px; }"
+                + "li { margin-top: 2px; margin-bottom: 3px; }"
+                + "blockquote { margin-left: 4px; margin-right: 0; margin-top: 6px; margin-bottom: 8px;"
+                + " padding-left: 12px; border-left-width: 3px; border-left-style: solid; border-left-color: #9fb3cc; color: #46505e; }"
+                + "pre { font-family: Monospaced; font-size: 13pt; background-color: #f1f4f8; color: #1c2531;"
+                + " padding: 8px; margin-top: 6px; margin-bottom: 8px; }"
+                + "code { font-family: Monospaced; font-size: 13pt; background-color: #eef1f6; color: #9a2a1f; }"
+                + "a { color: #1867d6; text-decoration: underline; }"
+                + "hr { margin-top: 10px; margin-bottom: 10px; color: #d3dae4; }";
+    }
+
+    static void applyDocumentStyle(javax.swing.text.html.StyleSheet sheet) {
+        for (String rule : documentCss().split("(?<=})")) {
+            if (!rule.isBlank()) sheet.addRule(rule);
+        }
+    }
 
     static String sanitize(String html) {
         if (html == null || html.isBlank()) return "";
@@ -41,7 +70,7 @@ final class RichTextHtml {
                             appendSafeAttribute(output, "color", attrs.getAttribute(HTML.Attribute.COLOR), "#[0-9a-fA-F]{3,8}");
                         }
                         if (name.equals("a")) appendHref(output, attrs.getAttribute(HTML.Attribute.HREF));
-                        if (name.equals("p") || name.equals("div")) appendAlignment(output, attrs.getAttribute(HTML.Attribute.ALIGN));
+                        if (name.equals("p") || name.equals("div") || name.matches("h[1-6]")) appendAlignment(output, attrs.getAttribute(HTML.Attribute.ALIGN));
                         appendSafeStyle(output, attrs.getAttribute(HTML.Attribute.STYLE));
                         output.append('>');
                     }
@@ -73,6 +102,18 @@ final class RichTextHtml {
         String textOnly = sanitized.replaceAll("(?s)<[^>]*>", "")
                 .replace("&nbsp;", "").replace("&#160;", "").trim();
         return textOnly.isEmpty() && !sanitized.contains("<hr>") ? "" : sanitized;
+    }
+
+    /** Aceita "intranet.empresa.com.br" e completa com https://; recusa o que não for web. */
+    static String normalizeUrl(String raw) {
+        if (raw == null) return null;
+        String value = raw.trim();
+        if (value.isEmpty()) return null;
+        if (!value.matches("(?i)^[a-z][a-z0-9+.-]*://.*")) {
+            if (!value.matches("^[^\\s/]+\\.[^\\s]+$") && !value.matches("^localhost(:\\d+)?(/.*)?$")) return null;
+            value = "https://" + value;
+        }
+        return value.matches("(?i)^https?://[^\\s<>\"']+$") ? value : null;
     }
 
     static String fromLegacySteps(List<ProcessStep> steps) {

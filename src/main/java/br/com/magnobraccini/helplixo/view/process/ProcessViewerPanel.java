@@ -52,13 +52,13 @@ public final class ProcessViewerPanel extends JPanel {
     private final JPanel blockLinks = new JPanel();
 
     public ProcessViewerPanel() {
-        setLayout(new BorderLayout(16, 0));
+        setLayout(new BorderLayout(0, 0));
         setBackground(Palette.CONTENT_BACKGROUND);
-        setBorder(BorderFactory.createEmptyBorder(16, 18, 16, 12));
+        setBorder(BorderFactory.createEmptyBorder(14, 24, 16, 20));
+        add(header, BorderLayout.NORTH);
 
         JPanel centerColumn = new JPanel(new BorderLayout(0, 10));
         centerColumn.setOpaque(false);
-        centerColumn.add(header, BorderLayout.NORTH);
 
         documentPane.setEditable(false);
         documentPane.setContentType("text/html");
@@ -71,14 +71,24 @@ public final class ProcessViewerPanel extends JPanel {
         copyItem.addActionListener(event -> documentPane.copy());
         copyMenu.add(copyItem);
         documentPane.setComponentPopupMenu(copyMenu);
+        documentPane.setBorder(BorderFactory.createEmptyBorder(2, 0, 24, 8));
+        documentPane.setSelectionColor(new java.awt.Color(187, 214, 251));
         JScrollPane documentScroll = new JScrollPane(documentPane);
         documentScroll.setBorder(BorderFactory.createEmptyBorder());
+        documentScroll.getVerticalScrollBar().setUnitIncrement(18);
         centerColumn.add(documentScroll, BorderLayout.CENTER);
-        add(centerColumn, BorderLayout.CENTER);
+        JPanel body = new JPanel(new BorderLayout(18, 0));
+        body.setOpaque(false);
+        body.add(centerColumn, BorderLayout.CENTER);
+        add(body, BorderLayout.CENTER);
 
         JPanel side = new JPanel();
         side.setOpaque(false);
         side.setLayout(new BoxLayout(side, BoxLayout.Y_AXIS));
+        // Os cards ficam na altura do próprio conteúdo, sem esticar até o fim da coluna.
+        JPanel sideTop = new JPanel(new BorderLayout());
+        sideTop.setOpaque(false);
+        sideTop.add(side, BorderLayout.NORTH);
         filesLinksCard.setAlignmentX(LEFT_ALIGNMENT);
         blocksCard.setAlignmentX(LEFT_ALIGNMENT);
         informationCard.setAlignmentX(LEFT_ALIGNMENT);
@@ -88,16 +98,19 @@ public final class ProcessViewerPanel extends JPanel {
         side.add(Box.createVerticalStrut(12));
         side.add(informationCard);
         side.add(Box.createVerticalGlue());
-        JScrollPane sideScroll = new JScrollPane(side);
+        JScrollPane sideScroll = new JScrollPane(sideTop, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+                JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         sideScroll.setBorder(BorderFactory.createEmptyBorder());
+        sideScroll.getVerticalScrollBar().setUnitIncrement(16);
         sideScroll.getViewport().setOpaque(false);
         sideScroll.setOpaque(false);
         sideScroll.setPreferredSize(new Dimension(300, 0));
         sideScroll.setMinimumSize(new Dimension(240, 0));
-        add(sideScroll, BorderLayout.EAST);
+        body.add(sideScroll, BorderLayout.EAST);
     }
 
     public void render(ProcessDocument process) {
+        header.setVisible(true);
         header.setModeToggleVisible(true);
         header.setEditingMode(false);
         header.setTitle(process.getTitle());
@@ -115,9 +128,10 @@ public final class ProcessViewerPanel extends JPanel {
         header.setVisible(showHeader);
         header.setTitle(title);
         StringBuilder body = new StringBuilder();
-        body.append("<h1>").append(escape(title)).append("</h1>");
-        body.append("<p>").append(multiline(description)).append("</p>");
-        body.append("<hr/><p>Selecione um processo ou use a barra de ferramentas para criar conteúdo.</p>");
+        if (!showHeader) body.append("<h1>").append(escape(title)).append("</h1>");
+        if (!safe(description).isBlank()) body.append("<p class=\"lead\">").append(multiline(description)).append("</p>");
+        body.append("<p class=\"muted\">Escolha um processo na navegação à esquerda")
+                .append(showHeader ? " ou crie um novo nesta seção com “Novo processo”." : ".").append("</p>");
         renderDocument(body.toString());
         filesLinksCard.setVisible(false);
         blocksCard.setVisible(false);
@@ -140,7 +154,8 @@ public final class ProcessViewerPanel extends JPanel {
     }
 
     private void renderDocument(String bodyContent) {
-        documentPane.setText("<html><head><style>" + STYLESHEET + "</style></head><body>" + bodyContent + "</body></html>");
+        documentPane.setText("<html><head><style>" + RichTextHtml.documentCss() + STYLESHEET
+                + "</style></head><body>" + bodyContent + "</body></html>");
         documentPane.setCaretPosition(0);
     }
 
@@ -150,18 +165,19 @@ public final class ProcessViewerPanel extends JPanel {
      * {@code style='...'} em cada elemento.
      */
     private static final String STYLESHEET = """
-            body { font-family: sans-serif; line-height: 1.6; background-color: #ffffff; color: #1c2531; }
-            h1 { color: #2f7edb; margin-bottom: 4px; }
-            h2 { color: #1c2531; margin-top: 20px; }
-            a { color: #2f7edb; }
+            body { background-color: #ffffff; }
+            .lead { font-size: 15pt; color: #46505e; margin-top: 0; margin-bottom: 14px; }
+            .muted { color: #6b7686; }
+            .section { font-size: 12pt; font-weight: bold; color: #6b7686; margin-top: 18px; margin-bottom: 6px;
+                       padding-bottom: 4px; border-bottom-width: 1px; border-bottom-style: solid; border-bottom-color: #e3e8ef; }
             .code-block { background-color: #f5f7fa; border: 1px solid #d3dae4; padding: 10px 12px;
-                         border-radius: 6px; font-family: monospace; font-size: 12px; }
-            .callout-info { background-color: #e7f0fb; border: 1px solid #c4d9f3; color: #18345d;
-                           border-radius: 6px; padding: 12px; margin-top: 10px; margin-bottom: 10px; }
-            .callout-warning { background-color: #fdf3de; border: 1px solid #f0dba3; color: #7a5b12;
-                              border-radius: 6px; padding: 12px; margin-top: 10px; margin-bottom: 10px; }
-            .callout-note { background-color: #eef0f2; border: 1px solid #d8dbe0; color: #3d3d40;
-                          border-radius: 6px; padding: 12px; margin-top: 10px; margin-bottom: 10px; }
+                         border-radius: 6px; font-family: monospace; font-size: 12pt; }
+            .callout-info { background-color: #eef4fc; border-left-width: 3px; border-left-style: solid;
+                           border-left-color: #1867d6; color: #18345d; padding: 10px 14px; margin-top: 14px; margin-bottom: 10px; }
+            .callout-warning { background-color: #fdf6e6; border-left-width: 3px; border-left-style: solid;
+                              border-left-color: #d6a02e; color: #6a4f10; padding: 10px 14px; margin-top: 14px; margin-bottom: 10px; }
+            .callout-note { background-color: #f2f4f6; border-left-width: 3px; border-left-style: solid;
+                          border-left-color: #8a96a8; color: #3d3d40; padding: 10px 14px; margin-top: 14px; margin-bottom: 10px; }
             """;
 
     private String buildBody(ProcessDocument process) {
@@ -171,9 +187,8 @@ public final class ProcessViewerPanel extends JPanel {
 
     private String buildBodyFromBlocks(ProcessDocument process) {
         StringBuilder html = new StringBuilder();
-        html.append("<h1>").append(escape(process.getTitle())).append("</h1>");
         if (!safe(process.getDescription()).isBlank()) {
-            html.append("<p>").append(multiline(process.getDescription())).append("</p>");
+            html.append("<p class=\"lead\">").append(multiline(process.getDescription())).append("</p>");
         }
         ContentBlockType openList = null;
         for (ContentBlock block : process.getContent()) {
@@ -211,9 +226,9 @@ public final class ProcessViewerPanel extends JPanel {
                     html.append("<p><img src=\"").append(escape(block.getUrl())).append("\" width=\"480\"/></p>");
                 }
             }
-            case INFO -> callout(html, "callout-info", "ℹ Informação", text);
-            case WARNING -> callout(html, "callout-warning", "⚠ Aviso", text);
-            case NOTE -> callout(html, "callout-note", "📝 Observação", text);
+            case INFO -> callout(html, "callout-info", "Informação", text);
+            case WARNING -> callout(html, "callout-warning", "Atenção", text);
+            case NOTE -> callout(html, "callout-note", "Observação", text);
         }
     }
 
@@ -238,15 +253,14 @@ public final class ProcessViewerPanel extends JPanel {
 
     private String buildBodyFromFields(ProcessDocument process) {
         StringBuilder html = new StringBuilder();
-        html.append("<h1>").append(escape(process.getTitle())).append("</h1>");
         if (!safe(process.getDescription()).isBlank()) {
-            html.append("<p>").append(multiline(process.getDescription())).append("</p>");
+            html.append("<p class=\"lead\">").append(multiline(process.getDescription())).append("</p>");
         }
         section(html, "Objetivo", process.getObjective());
         section(html, "Pré-requisitos", process.getPrerequisites());
         appendSteps(html, process);
         if (!safe(process.getObservations()).isBlank()) {
-            callout(html, "callout-info", "ℹ Observação", multiline(process.getObservations()));
+            callout(html, "callout-info", "Observação", multiline(process.getObservations()));
         }
         return html.toString();
     }
@@ -254,11 +268,16 @@ public final class ProcessViewerPanel extends JPanel {
     private void appendSteps(StringBuilder html, ProcessDocument process) {
         String richSteps = RichTextHtml.sanitize(process.getStepsHtml());
         if (!richSteps.isBlank()) {
-            html.append("<h2>Passos</h2>").append(numberedRichSteps(richSteps));
+            // Se o próprio texto já abre com um título ("Procedimento"), não repete "Passos" em cima.
+            if (!richSteps.matches("(?s)^\\s*<h[1-3][ >].*")) html.append("<p class=\"section\">Passos</p>");
+            html.append(numberedRichSteps(richSteps));
             return;
         }
-        if (process.getSteps() == null || process.getSteps().isEmpty()) return;
-        html.append("<h2>Passos</h2><ol>");
+        if (process.getSteps() == null || process.getSteps().isEmpty()) {
+            html.append("<p class=\"muted\">Este processo ainda não tem passos. Use “Editar” para escrevê-los.</p>");
+            return;
+        }
+        html.append("<p class=\"section\">Passos</p><ol>");
         for (ProcessStep step : process.getSteps()) {
             html.append("<li><b>").append(escape(step.getTitle())).append("</b>");
             if (!safe(step.getDescription()).isBlank()) html.append("<br/>").append(multiline(step.getDescription()));
@@ -293,9 +312,9 @@ public final class ProcessViewerPanel extends JPanel {
     private void renderBlockAccess(java.util.List<ContentBlock> blocks) {
         blocksCard.removeAll();
         blocksCard.setOpaque(true);
-        blocksCard.setBackground(Palette.CONTENT_BACKGROUND);
+        blocksCard.setBackground(Palette.CONTENT_SURFACE_ALT);
         blocksCard.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(Palette.SIDEBAR_BORDER, 1, true),
+                BorderFactory.createLineBorder(Palette.CONTENT_BORDER, 1, true),
                 BorderFactory.createEmptyBorder(12, 14, 12, 14)));
         JLabel title = new JLabel("Blocos do processo");
         title.setFont(title.getFont().deriveFont(Font.BOLD, 13f));
@@ -404,7 +423,7 @@ public final class ProcessViewerPanel extends JPanel {
 
     private void section(StringBuilder html, String title, String value) {
         if (!safe(value).isBlank()) {
-            html.append("<h2>").append(escape(title)).append("</h2><p>")
+            html.append("<p class=\"section\">").append(escape(title)).append("</p><p>")
                     .append(multiline(value)).append("</p>");
         }
     }

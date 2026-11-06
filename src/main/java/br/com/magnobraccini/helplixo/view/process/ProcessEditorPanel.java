@@ -13,37 +13,38 @@ import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
-import javax.swing.JToggleButton;
 import javax.swing.KeyStroke;
+import javax.swing.ScrollPaneConstants;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.text.JTextComponent;
-import javax.swing.undo.CannotRedoException;
-import javax.swing.undo.CannotUndoException;
-import javax.swing.undo.UndoManager;
 import java.awt.BorderLayout;
 import java.awt.Component;
-import java.awt.Container;
-import java.awt.Font;
-import java.awt.GridLayout;
-import java.awt.Insets;
 import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.KeyboardFocusManager;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
- * Formulário de edição de processo. Reorganizado em seções com cabeçalho (Conteúdo, Detalhes,
- * Passos, Blocos, Observações e Links) para deixar de parecer uma pilha de {@code JTextArea}s —
- * Passos usa um editor visual rico; os demais campos estruturados continuam com os componentes Swing
- * existentes e {@link #readData()} mantém seu contrato para o controlador.
+ * Tela de edição de processo, com a mesma geometria da leitura: título e resumo no topo, o
+ * documento ao centro e uma coluna de detalhes de 300px à direita. Os passos — o conteúdo que
+ * importa — ficam sempre abertos e ocupam toda a altura disponível; blocos e notas/links ficam
+ * em abas ao lado, em vez de seções recolhidas que precisavam ser reabertas a cada edição.
+ * {@link #readData()} mantém o contrato com o controlador.
  */
 public final class ProcessEditorPanel extends JPanel {
+    private static final int SIDE_WIDTH = 300;
+
     private final ProcessHeaderPanel header = new ProcessHeaderPanel();
-    private final JTextArea descriptionArea = area(3);
+    private final JTextArea descriptionArea = area(2);
     private final JTextArea objectiveArea = area(3);
     private final JTextArea prerequisitesArea = area(3);
     private final JTextField responsibleField = new JTextField();
@@ -51,79 +52,268 @@ public final class ProcessEditorPanel extends JPanel {
     private final JTextField tagsField = new JTextField();
     private final RichTextEditorPanel stepsEditor = new RichTextEditorPanel();
     private final ContentBlockEditorPanel contentEditor = new ContentBlockEditorPanel();
-    private final JTextArea observationsArea = area(4);
-    private final JTextArea linksArea = area(4);
-    private final UndoManager undoManager = new UndoManager();
+    private final JTextArea observationsArea = area(5);
+    private final JTextArea linksArea = area(5);
+    private final JTabbedPane tabs = new JTabbedPane();
+    private final Map<JTextComponent, TextUndo> histories = new LinkedHashMap<>();
+    private JTextComponent lastFocused;
     private Runnable changeListener = () -> { };
+    private Runnable historyListener = () -> { };
     private boolean filling;
-    private final java.util.List<Runnable> collapseSections = new java.util.ArrayList<>();
 
     public ProcessEditorPanel() {
-        setLayout(new BorderLayout());
+        setLayout(new BorderLayout(0, 0));
         setBackground(Palette.CONTENT_BACKGROUND);
-        setBorder(BorderFactory.createEmptyBorder(16, 18, 16, 18));
+        setBorder(BorderFactory.createEmptyBorder(14, 24, 16, 20));
 
-        add(header, BorderLayout.NORTH);
+        add(buildTop(), BorderLayout.NORTH);
 
-        JPanel stack = new JPanel();
-        stack.setLayout(new BoxLayout(stack, BoxLayout.Y_AXIS));
-        stack.setBackground(Palette.CONTENT_BACKGROUND);
+        JPanel body = new JPanel(new BorderLayout(18, 0));
+        body.setOpaque(false);
+        body.add(buildTabs(), BorderLayout.CENTER);
+        body.add(buildDetailsColumn(), BorderLayout.EAST);
+        add(body, BorderLayout.CENTER);
 
-        stack.add(section("Conteúdo",
-                labeled("Descrição", scroll(descriptionArea))));
-        stack.add(verticalGap());
-        stack.add(section("Detalhes",
-                labeled("Objetivo", scroll(objectiveArea)),
-                labeled("Pré-requisitos", scroll(prerequisitesArea)),
-                labeled("Responsável", responsibleField),
-                labeled("Categoria", categoryField),
-                labeled("Tags (separadas por vírgula)", tagsField)));
-        stack.add(verticalGap());
-        stack.add(section("Passos",
-                labeled("Digite os procedimentos e use a barra para aplicar formatação ou listas. Enter cria um parágrafo.", stepsEditor)));
-        stack.add(verticalGap());
-        stack.add(section("Blocos", contentEditor));
-        stack.add(verticalGap());
-        JPanel notesGrid = new JPanel(new GridLayout(1, 2, 16, 0));
-        notesGrid.setOpaque(false);
-        notesGrid.add(labeled("Observações", scroll(observationsArea)));
-        notesGrid.add(linksField());
-        stack.add(section("Notas e links", notesGrid));
-
-        JScrollPane formScroll = new JScrollPane(stack);
-        formScroll.setBorder(BorderFactory.createEmptyBorder());
-        formScroll.getViewport().setBackground(Palette.CONTENT_BACKGROUND);
-        formScroll.getVerticalScrollBar().setUnitIncrement(16);
-        formScroll.setWheelScrollingEnabled(true);
-        add(formScroll, BorderLayout.CENTER);
-        installPageWheelRouting(stack, formScroll);
-
-        applyLightSurface(this);
         installChangeTracking();
         installUndoSupport();
     }
+
+    // ---------------------------------------------------------------- estrutura
+
+    private JComponent buildTop() {
+        JPanel top = new JPanel(new BorderLayout(0, 2));
+        top.setOpaque(false);
+        top.add(header, BorderLayout.NORTH);
+        descriptionArea.putClientProperty("JTextField.placeholderText",
+                "Resumo: o que este processo resolve e quando usar");
+        descriptionArea.getAccessibleContext().setAccessibleName("Resumo do processo");
+        descriptionArea.setFont(descriptionArea.getFont().deriveFont(14f));
+        descriptionArea.setForeground(Palette.CONTENT_TEXT_SECONDARY);
+        styleInput(descriptionArea);
+        descriptionArea.setForeground(Palette.CONTENT_TEXT_SECONDARY);
+        descriptionArea.setMargin(new java.awt.Insets(2, 0, 2, 0));
+        JScrollPane description = scroll(descriptionArea, 42);
+        javax.swing.border.Border idle = BorderFactory.createMatteBorder(0, 0, 1, 0, Palette.CONTENT_BACKGROUND);
+        javax.swing.border.Border focused = BorderFactory.createMatteBorder(0, 0, 1, 0, Palette.CONTENT_BORDER);
+        description.setBorder(idle);
+        descriptionArea.addFocusListener(new java.awt.event.FocusAdapter() {
+            @Override public void focusGained(java.awt.event.FocusEvent event) { description.setBorder(focused); }
+            @Override public void focusLost(java.awt.event.FocusEvent event) { description.setBorder(idle); }
+        });
+        JPanel descriptionRow = new JPanel(new BorderLayout());
+        descriptionRow.setOpaque(false);
+        descriptionRow.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, SIDE_WIDTH + 18));
+        descriptionRow.add(description, BorderLayout.CENTER);
+        top.add(descriptionRow, BorderLayout.CENTER);
+        return top;
+    }
+
+    private JComponent buildTabs() {
+        tabs.putClientProperty("JTabbedPane.tabType", "underlined");
+        tabs.putClientProperty("JTabbedPane.tabHeight", 34);
+        tabs.putClientProperty("JTabbedPane.showTabSeparators", false);
+        tabs.putClientProperty("JTabbedPane.tabAreaAlignment", "leading");
+        tabs.setFocusable(false);
+        tabs.setBackground(Palette.CONTENT_BACKGROUND);
+        tabs.setForeground(Palette.CONTENT_TEXT_PRIMARY);
+        tabs.setFont(tabs.getFont().deriveFont(13f));
+
+        JPanel steps = new JPanel(new BorderLayout());
+        steps.setOpaque(false);
+        steps.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
+        steps.add(stepsEditor, BorderLayout.CENTER);
+        tabs.addTab("Passos", steps);
+
+        JPanel blocks = new JPanel(new BorderLayout(0, 8));
+        blocks.setOpaque(false);
+        blocks.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
+        blocks.add(hint("Caixas de informação, aviso, código, imagens e links que aparecem antes dos passos."),
+                BorderLayout.NORTH);
+        blocks.add(contentEditor, BorderLayout.CENTER);
+        tabs.addTab("Blocos", blocks);
+
+        JPanel notes = new JPanel();
+        notes.setOpaque(false);
+        notes.setLayout(new BoxLayout(notes, BoxLayout.Y_AXIS));
+        notes.setBorder(BorderFactory.createEmptyBorder(12, 0, 0, 0));
+        notes.add(field("Observações", "Aparecem em destaque ao final dos passos.", scroll(observationsArea, 120)));
+        notes.add(Box.createVerticalStrut(14));
+        notes.add(linksField());
+        notes.add(Box.createVerticalGlue());
+        tabs.addTab("Notas e links", notes);
+        return tabs;
+    }
+
+    private JComponent buildDetailsColumn() {
+        JPanel column = new JPanel();
+        column.setLayout(new BoxLayout(column, BoxLayout.Y_AXIS));
+        column.setBackground(Palette.CONTENT_SURFACE_ALT);
+        column.setBorder(BorderFactory.createEmptyBorder(14, 16, 16, 16));
+
+        JLabel title = new JLabel("Detalhes");
+        title.setFont(title.getFont().deriveFont(Font.BOLD, 13.5f));
+        title.setForeground(Palette.CONTENT_TEXT_PRIMARY);
+        title.setAlignmentX(LEFT_ALIGNMENT);
+        column.add(title);
+        column.add(Box.createVerticalStrut(12));
+
+        categoryField.putClientProperty("JTextField.placeholderText", "Ex.: Windows");
+        responsibleField.putClientProperty("JTextField.placeholderText", "Equipe ou pessoa");
+        tagsField.putClientProperty("JTextField.placeholderText", "admin, usuário local");
+        column.add(field("Categoria", null, categoryField));
+        column.add(Box.createVerticalStrut(12));
+        column.add(field("Responsável", null, responsibleField));
+        column.add(Box.createVerticalStrut(12));
+        column.add(field("Tags", "Separe por vírgula. Ajudam a busca.", tagsField));
+        column.add(Box.createVerticalStrut(16));
+        column.add(field("Objetivo", null, scroll(objectiveArea, 76)));
+        column.add(Box.createVerticalStrut(12));
+        column.add(field("Pré-requisitos", "Acessos, ferramentas ou permissões necessárias.", scroll(prerequisitesArea, 76)));
+        column.add(Box.createVerticalGlue());
+
+        JScrollPane scroll = new JScrollPane(column, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scroll.setBorder(BorderFactory.createLineBorder(Palette.CONTENT_BORDER, 1, true));
+        scroll.getViewport().setBackground(Palette.CONTENT_SURFACE_ALT);
+        scroll.getVerticalScrollBar().setUnitIncrement(16);
+        scroll.setPreferredSize(new Dimension(SIDE_WIDTH, 0));
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setOpaque(false);
+        wrapper.setBorder(BorderFactory.createEmptyBorder(44, 0, 0, 0));
+        wrapper.add(scroll, BorderLayout.CENTER);
+        return wrapper;
+    }
+
+    private JPanel field(String label, String help, Component input) {
+        JPanel panel = new JPanel(new BorderLayout(0, 4));
+        panel.setOpaque(false);
+        panel.setAlignmentX(LEFT_ALIGNMENT);
+        JLabel caption = new JLabel(label);
+        caption.setForeground(Palette.CONTENT_TEXT_PRIMARY);
+        caption.setFont(caption.getFont().deriveFont(Font.BOLD, 12f));
+        caption.setLabelFor(input instanceof JScrollPane s ? s.getViewport().getView() : input);
+        panel.add(caption, BorderLayout.NORTH);
+        panel.add(input, BorderLayout.CENTER);
+        if (help != null) panel.add(hint(help), BorderLayout.SOUTH);
+        styleInput(input);
+        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, panel.getPreferredSize().height));
+        return panel;
+    }
+
+    private static JLabel hint(String text) {
+        JLabel hint = new JLabel(text);
+        hint.setForeground(Palette.CONTENT_TEXT_SECONDARY);
+        hint.setFont(hint.getFont().deriveFont(Font.PLAIN, 11.5f));
+        return hint;
+    }
+
+    private void styleInput(Component input) {
+        Component target = input instanceof JScrollPane s ? s.getViewport().getView() : input;
+        // Bordas claras (o tema escuro da janela as deixaria pretas sobre o fundo branco).
+        if (input instanceof JScrollPane || input instanceof JTextField) {
+            ((JComponent) input).putClientProperty("FlatLaf.style", "borderColor: #d3dae4; focusedBorderColor: #1867d6");
+        }
+        if (target instanceof JTextComponent text) {
+            text.setBackground(Palette.CONTENT_BACKGROUND);
+            text.setForeground(Palette.CONTENT_TEXT_PRIMARY);
+            text.setCaretColor(Palette.CONTENT_TEXT_PRIMARY);
+            text.setSelectionColor(new java.awt.Color(187, 214, 251));
+            text.setSelectedTextColor(Palette.CONTENT_TEXT_PRIMARY);
+        }
+    }
+
+    /** Links/arquivos: um por linha, com botão para anexar um arquivo local pelo seletor do sistema. */
+    private JPanel linksField() {
+        JButton attachButton = new JButton("Anexar arquivo…");
+        attachButton.setFocusable(false);
+        attachButton.addActionListener(event -> attachFile());
+
+        JLabel caption = new JLabel("Links e arquivos");
+        caption.setForeground(Palette.CONTENT_TEXT_PRIMARY);
+        caption.setFont(caption.getFont().deriveFont(Font.BOLD, 12f));
+        JPanel linksHeader = new JPanel(new BorderLayout());
+        linksHeader.setOpaque(false);
+        linksHeader.add(caption, BorderLayout.WEST);
+        linksHeader.add(attachButton, BorderLayout.EAST);
+
+        linksArea.putClientProperty("JTextField.placeholderText", "https://intranet…  ou  \\\\servidor\\pasta\\arquivo.pdf");
+        JPanel panel = new JPanel(new BorderLayout(0, 4));
+        panel.setOpaque(false);
+        panel.setAlignmentX(LEFT_ALIGNMENT);
+        panel.add(linksHeader, BorderLayout.NORTH);
+        JScrollPane scroll = scroll(linksArea, 120);
+        styleInput(scroll);
+        panel.add(scroll, BorderLayout.CENTER);
+        panel.add(hint("Um por linha. Aparecem no painel “Arquivos e links” com botões para abrir e copiar."), BorderLayout.SOUTH);
+        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, panel.getPreferredSize().height));
+        return panel;
+    }
+
+    private void attachFile() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("Anexar arquivo ao processo");
+        chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+        String path = chooser.getSelectedFile().getAbsolutePath();
+        String current = linksArea.getText();
+        if (current.isBlank()) {
+            linksArea.setText(path);
+        } else {
+            linksArea.setText(current.endsWith("\n") ? current + path : current + "\n" + path);
+        }
+        linksArea.setCaretPosition(linksArea.getDocument().getLength());
+    }
+
+    // ---------------------------------------------------------------- dados
 
     public void fill(ProcessDocument process) {
         filling = true;
         header.setModeToggleVisible(true);
         header.setEditingMode(true);
         header.setTitleEditable(true);
-        header.setTitle(safe(process.getTitle()));
-        descriptionArea.setText(safe(process.getDescription()));
-        objectiveArea.setText(safe(process.getObjective()));
-        prerequisitesArea.setText(safe(process.getPrerequisites()));
-        responsibleField.setText(safe(process.getResponsible()));
-        categoryField.setText(safe(process.getCategory()));
-        tagsField.setText(String.join(", ", process.getTags()));
-        observationsArea.setText(safe(process.getObservations()));
-        linksArea.setText(String.join("\n", process.getLinks()));
+        silently(() -> {
+            header.setTitle(safe(process.getTitle()));
+            descriptionArea.setText(safe(process.getDescription()));
+            objectiveArea.setText(safe(process.getObjective()));
+            prerequisitesArea.setText(safe(process.getPrerequisites()));
+            responsibleField.setText(safe(process.getResponsible()));
+            categoryField.setText(safe(process.getCategory()));
+            tagsField.setText(String.join(", ", process.getTags()));
+            observationsArea.setText(safe(process.getObservations()));
+            linksArea.setText(String.join("\n", process.getLinks()));
+        });
         String stepsHtml = safe(process.getStepsHtml());
         stepsEditor.setHtml(stepsHtml.isBlank() ? RichTextHtml.fromLegacySteps(process.getSteps()) : stepsHtml);
         contentEditor.setBlocks(process.getContent());
-        collapseSections.forEach(Runnable::run);
-        undoManager.discardAllEdits();
-        header.getTitleField().requestFocusInWindow();
+        histories.values().forEach(TextUndo::discardAll);
+        updateTabTitles();
+        tabs.setSelectedIndex(0);
+        // Sem título, começa pelo título; senão, direto nos passos — é o que quase sempre se edita.
+        JComponent focusTarget = safe(process.getTitle()).isBlank() ? header.getTitleField() : stepsEditor.getEditor();
+        lastFocused = (JTextComponent) focusTarget;
+        javax.swing.SwingUtilities.invokeLater(focusTarget::requestFocusInWindow);
         filling = false;
+        historyListener.run();
+    }
+
+    private void silently(Runnable operation) {
+        Runnable chain = operation;
+        for (TextUndo history : histories.values()) {
+            Runnable inner = chain;
+            chain = () -> history.silently(inner);
+        }
+        chain.run();
+    }
+
+    private void updateTabTitles() {
+        int blocks = contentEditor.getBlocks().size();
+        tabs.setTitleAt(1, blocks == 0 ? "Blocos" : "Blocos (" + blocks + ")");
+        long links = linksArea.getText().lines().filter(line -> !line.isBlank()).count();
+        boolean hasNotes = !observationsArea.getText().isBlank();
+        tabs.setTitleAt(2, links == 0 && !hasNotes ? "Notas e links"
+                : "Notas e links (" + (links + (hasNotes ? 1 : 0)) + ")");
     }
 
     public ProcessEditorData readData() {
@@ -145,158 +335,17 @@ public final class ProcessEditorPanel extends JPanel {
         this.changeListener = listener == null ? () -> { } : listener;
     }
 
+    /** Avisado quando muda a disponibilidade de Desfazer/Refazer (para a barra do processo). */
+    public void onHistoryChange(Runnable listener) {
+        this.historyListener = listener == null ? () -> { } : listener;
+    }
 
-    /** Delega para o cabeçalho o clique em "Visualização", que dispara o "Cancelar" real da toolbar. */
+    /** Delega para o cabeçalho o clique em "Visualizar", que dispara o "Cancelar" real da toolbar. */
     public void onSwitchToView(Runnable listener) {
         header.onSwitchToView(listener);
     }
 
-    private JPanel section(String title, Component... rows) {
-        JPanel card = new JPanel();
-        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        card.setBackground(Palette.CONTENT_BACKGROUND);
-        card.setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
-        card.setAlignmentX(LEFT_ALIGNMENT);
-
-        JPanel body = new JPanel();
-        body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
-        body.setOpaque(false);
-        body.setAlignmentX(LEFT_ALIGNMENT);
-        body.setVisible(false);
-
-        for (Component row : rows) {
-            if (row instanceof JComponent jComponent) {
-                jComponent.setAlignmentX(LEFT_ALIGNMENT);
-            }
-            body.add(row);
-            body.add(Box.createVerticalStrut(8));
-        }
-        JToggleButton toggle = new JToggleButton("▸  " + title, false);
-        toggle.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        toggle.setFocusable(false);
-        toggle.setOpaque(false);
-        toggle.setContentAreaFilled(false);
-        toggle.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
-        toggle.setFont(toggle.getFont().deriveFont(Font.BOLD, 13f));
-        toggle.setForeground(Palette.CONTENT_TEXT_PRIMARY);
-        toggle.addActionListener(event -> {
-            body.setVisible(toggle.isSelected());
-            updateSectionToggle(toggle, body, title);
-            card.revalidate();
-            card.repaint();
-        });
-        collapseSections.add(() -> {
-            toggle.setSelected(false);
-            body.setVisible(false);
-            updateSectionToggle(toggle, body, title);
-        });
-        card.add(toggle);
-        card.add(body);
-        return card;
-    }
-
-    private void updateSectionToggle(JToggleButton toggle, JPanel body, String title) {
-        toggle.setText((body.isVisible() ? "▾  " : "▸  ") + title);
-    }
-
-    private void installPageWheelRouting(Component component, JScrollPane formScroll) {
-        component.addMouseWheelListener(event -> {
-            var bar = formScroll.getVerticalScrollBar();
-            int direction = event.getWheelRotation();
-            int next = bar.getValue() + direction * bar.getUnitIncrement(direction) * Math.max(1, event.getScrollAmount());
-            bar.setValue(Math.max(bar.getMinimum(), Math.min(next, bar.getMaximum() - bar.getVisibleAmount())));
-            event.consume();
-        });
-        if (component instanceof Container container) {
-            for (Component child : container.getComponents()) installPageWheelRouting(child, formScroll);
-        }
-    }
-
-    private JPanel labeled(String label, Component field) {
-        JPanel panel = new JPanel(new BorderLayout(0, 4));
-        panel.setBackground(Palette.CONTENT_BACKGROUND);
-        panel.setAlignmentX(LEFT_ALIGNMENT);
-        JLabel fieldLabel = new JLabel(label);
-        fieldLabel.setForeground(Palette.CONTENT_TEXT_SECONDARY);
-        fieldLabel.setFont(fieldLabel.getFont().deriveFont(Font.PLAIN, 12f));
-        panel.add(fieldLabel, BorderLayout.NORTH);
-        panel.add(field, BorderLayout.CENTER);
-        return panel;
-    }
-
-    /**
-     * Igual a {@link #labeled} para os "Links", mas com um botão "📎 Anexar arquivo..." ao lado
-     * do rótulo: abre um seletor de arquivos e acrescenta o caminho escolhido como uma nova
-     * linha em {@link #linksArea} — mesma lista que vira o card "Arquivos / Links" na
-     * visualização do processo, só que agora também aceita arquivos locais, não só URLs.
-     */
-    private JPanel linksField() {
-        JLabel fieldLabel = new JLabel("Links / arquivos — um por linha");
-        fieldLabel.setForeground(Palette.CONTENT_TEXT_SECONDARY);
-        fieldLabel.setFont(fieldLabel.getFont().deriveFont(Font.PLAIN, 12f));
-
-        JButton attachButton = new JButton("📎 Anexar arquivo...");
-        attachButton.setFocusable(false);
-        attachButton.putClientProperty("JButton.buttonType", "toolBarButton");
-        attachButton.addActionListener(event -> attachFile());
-
-        JPanel linksHeader = new JPanel(new BorderLayout());
-        linksHeader.setBackground(Palette.CONTENT_BACKGROUND);
-        linksHeader.add(fieldLabel, BorderLayout.WEST);
-        linksHeader.add(attachButton, BorderLayout.EAST);
-
-        JPanel panel = new JPanel(new BorderLayout(0, 4));
-        panel.setBackground(Palette.CONTENT_BACKGROUND);
-        panel.setAlignmentX(LEFT_ALIGNMENT);
-        panel.add(linksHeader, BorderLayout.NORTH);
-        panel.add(scroll(linksArea), BorderLayout.CENTER);
-        return panel;
-    }
-
-    private void attachFile() {
-        JFileChooser chooser = new JFileChooser();
-        chooser.setDialogTitle("Anexar arquivo ao processo");
-        chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-        if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) {
-            return;
-        }
-        String path = chooser.getSelectedFile().getAbsolutePath();
-        String current = linksArea.getText();
-        if (current.isBlank()) {
-            linksArea.setText(path);
-        } else {
-            linksArea.setText(current.endsWith("\n") ? current + path : current + "\n" + path);
-        }
-        linksArea.setCaretPosition(linksArea.getDocument().getLength());
-    }
-
-    private static Component verticalGap() {
-        return Box.createVerticalStrut(12);
-    }
-
-    private void applyLightSurface(Container container) {
-        for (Component component : container.getComponents()) {
-            if (component instanceof RichTextEditorPanel) {
-                // O editor rico mantém sua própria faixa escura e a página clara de edição.
-                continue;
-            } else if (component instanceof JTextField field) {
-                field.setBackground(Palette.CONTENT_BACKGROUND);
-                field.setForeground(Palette.CONTENT_TEXT_PRIMARY);
-                field.setCaretColor(Palette.CONTENT_TEXT_PRIMARY);
-            } else if (component instanceof JTextArea area) {
-                area.setBackground(Palette.CONTENT_BACKGROUND);
-                area.setForeground(Palette.CONTENT_TEXT_PRIMARY);
-                area.setCaretColor(Palette.CONTENT_TEXT_PRIMARY);
-            } else if (component instanceof JLabel label) {
-                label.setForeground(Palette.CONTENT_TEXT_PRIMARY);
-            } else if (component instanceof JPanel panel) {
-                panel.setBackground(Palette.CONTENT_BACKGROUND);
-            }
-            if (component instanceof Container child) {
-                applyLightSurface(child);
-            }
-        }
-    }
+    // ---------------------------------------------------------------- alterações e histórico
 
     private void installChangeTracking() {
         DocumentListener listener = new DocumentListener() {
@@ -304,27 +353,42 @@ public final class ProcessEditorPanel extends JPanel {
             @Override public void removeUpdate(DocumentEvent event) { changed(); }
             @Override public void changedUpdate(DocumentEvent event) { changed(); }
         };
-        header.getTitleField().getDocument().addDocumentListener(listener);
-        descriptionArea.getDocument().addDocumentListener(listener);
-        objectiveArea.getDocument().addDocumentListener(listener);
-        prerequisitesArea.getDocument().addDocumentListener(listener);
-        responsibleField.getDocument().addDocumentListener(listener);
-        categoryField.getDocument().addDocumentListener(listener);
-        tagsField.getDocument().addDocumentListener(listener);
+        for (JTextComponent component : plainTextComponents()) component.getDocument().addDocumentListener(listener);
         stepsEditor.getEditor().getDocument().addDocumentListener(listener);
-        observationsArea.getDocument().addDocumentListener(listener);
-        linksArea.getDocument().addDocumentListener(listener);
-        contentEditor.onChange(this::changed);
+        contentEditor.onChange(() -> { changed(); updateTabTitles(); });
+        DocumentListener tabCounter = new DocumentListener() {
+            @Override public void insertUpdate(DocumentEvent event) { if (!filling) updateTabTitles(); }
+            @Override public void removeUpdate(DocumentEvent event) { if (!filling) updateTabTitles(); }
+            @Override public void changedUpdate(DocumentEvent event) { }
+        };
+        linksArea.getDocument().addDocumentListener(tabCounter);
+        observationsArea.getDocument().addDocumentListener(tabCounter);
     }
 
+    private JTextComponent[] plainTextComponents() {
+        return new JTextComponent[]{header.getTitleField(), descriptionArea, objectiveArea, prerequisitesArea,
+                responsibleField, categoryField, tagsField, observationsArea, linksArea};
+    }
+
+    /**
+     * Cada campo tem o próprio histórico; Desfazer/Refazer (barra ou Ctrl+Z) age no último campo
+     * em que a pessoa digitou. Antes, todos os campos dividiam um histórico e o editor de passos
+     * ainda tinha outro em paralelo, o que fazia o Desfazer da barra e o Ctrl+Z discordarem.
+     */
     private void installUndoSupport() {
-        JTextComponent[] textComponents = {
-                header.getTitleField(), descriptionArea, objectiveArea, prerequisitesArea,
-                responsibleField, categoryField, tagsField, stepsEditor.getEditor(), observationsArea, linksArea
-        };
-        for (JTextComponent component : textComponents) {
-            component.getDocument().addUndoableEditListener(event -> undoManager.addEdit(event.getEdit()));
+        for (JTextComponent component : plainTextComponents()) {
+            TextUndo history = new TextUndo(component.getDocument());
+            history.onStateChange(() -> historyListener.run());
+            histories.put(component, history);
         }
+        stepsEditor.onHistoryChange(() -> historyListener.run());
+        KeyboardFocusManager.getCurrentKeyboardFocusManager().addPropertyChangeListener("permanentFocusOwner", event -> {
+            if (event.getNewValue() instanceof JTextComponent text
+                    && (histories.containsKey(text) || text == stepsEditor.getEditor())) {
+                lastFocused = text;
+                historyListener.run();
+            }
+        });
 
         int shortcutMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
         getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
@@ -341,36 +405,30 @@ public final class ProcessEditorPanel extends JPanel {
         });
     }
 
-    /** Desfaz a última edição de texto no editor, se houver. */
+    /** Desfaz a última edição do campo em uso (ou do último campo editado). */
     public void undo() {
-        try {
-            if (undoManager.canUndo()) {
-                undoManager.undo();
-                changed();
-            }
-        } catch (CannotUndoException ignored) {
-            // nada a desfazer
-        }
+        if (lastFocused == stepsEditor.getEditor()) stepsEditor.undo();
+        else if (histories.containsKey(lastFocused)) histories.get(lastFocused).undo();
+        changed();
     }
 
-    /** Refaz a última edição de texto desfeita, se houver. */
+    /** Refaz a última edição desfeita do campo em uso. */
     public void redo() {
-        try {
-            if (undoManager.canRedo()) {
-                undoManager.redo();
-                changed();
-            }
-        } catch (CannotRedoException ignored) {
-            // nada a refazer
-        }
+        if (lastFocused == stepsEditor.getEditor()) stepsEditor.redo();
+        else if (histories.containsKey(lastFocused)) histories.get(lastFocused).redo();
+        changed();
     }
 
     public boolean canUndo() {
-        return undoManager.canUndo();
+        if (lastFocused == stepsEditor.getEditor()) return stepsEditor.canUndo();
+        TextUndo history = histories.get(lastFocused);
+        return history != null && history.canUndo();
     }
 
     public boolean canRedo() {
-        return undoManager.canRedo();
+        if (lastFocused == stepsEditor.getEditor()) return stepsEditor.canRedo();
+        TextUndo history = histories.get(lastFocused);
+        return history != null && history.canRedo();
     }
 
     private void changed() {
@@ -380,15 +438,17 @@ public final class ProcessEditorPanel extends JPanel {
     }
 
     private static JTextArea area(int rows) {
-        JTextArea area = new JTextArea(rows, 30);
+        JTextArea area = new JTextArea(rows, 20);
         area.setLineWrap(true);
         area.setWrapStyleWord(true);
+        area.setMargin(new java.awt.Insets(4, 6, 4, 6));
         return area;
     }
 
-    private static JScrollPane scroll(JTextArea area) {
+    private static JScrollPane scroll(JTextArea area, int height) {
         JScrollPane scrollPane = new JScrollPane(area);
-        scrollPane.setPreferredSize(new Dimension(200, Math.max(76, area.getRows() * 22)));
+        scrollPane.setPreferredSize(new Dimension(160, height));
+        scrollPane.setMinimumSize(new Dimension(80, height));
         scrollPane.getViewport().setBackground(Palette.CONTENT_BACKGROUND);
         scrollPane.setBackground(Palette.CONTENT_BACKGROUND);
         scrollPane.setAlignmentX(LEFT_ALIGNMENT);

@@ -74,10 +74,8 @@ public final class ProcessPanel extends JPanel {
     private final JMenuItem renameMenuItem = new JMenuItem("Renomear");
     private final JMenuItem moveMenuItem = new JMenuItem("Mover para seção");
     private final JMenuItem refreshMenuItem = new JMenuItem("Atualizar");
-    private final JButton undoButton = button("↶ Desfazer");
-    private final JButton redoButton = button("↷ Refazer");
-    private final JButton saveButton = button("Salvar");
-    private final JButton cancelButton = button("Cancelar");
+    private final JButton saveButton = new JButton("Salvar");
+    private final JButton cancelButton = new JButton("Cancelar");
 
     private Consumer<Object> selectionListener = ignored -> { };
     private Runnable favoriteListener = () -> { };
@@ -93,8 +91,6 @@ public final class ProcessPanel extends JPanel {
         add(createToolbar(), BorderLayout.NORTH);
         add(createWorkspace(), BorderLayout.CENTER);
         editorPanel.onChange(this::markDirty);
-        undoButton.addActionListener(event -> { editorPanel.undo(); updateActionState(); });
-        redoButton.addActionListener(event -> { editorPanel.redo(); updateActionState(); });
         viewerPanel.onSwitchToEdit(() -> { if (editButton.isEnabled()) editButton.doClick(); });
         editorPanel.onSwitchToView(() -> { if (cancelButton.isEnabled()) cancelButton.doClick(); });
         installShortcuts();
@@ -234,7 +230,7 @@ public final class ProcessPanel extends JPanel {
         editorPanel.fill(process);
         editing = true;
         dirty = false;
-        unsavedLabel.setText("Modo de edição");
+        showEditState(false);
         contentLayout.show(contentCards, EDIT_CARD);
         updateActionState();
     }
@@ -312,16 +308,35 @@ public final class ProcessPanel extends JPanel {
         toolbar.add(editButton);
         toolbar.add(deleteButton);
         toolbar.add(createMoreButton());
-        toolbar.add(undoButton);
-        toolbar.add(redoButton);
         toolbar.add(Box.createHorizontalGlue());
         unsavedLabel.setHorizontalAlignment(SwingConstants.RIGHT);
-        unsavedLabel.setForeground(Palette.WARNING);
+        unsavedLabel.setForeground(Palette.TEXT_ON_DARK_MUTED);
+        unsavedLabel.setFont(unsavedLabel.getFont().deriveFont(12.5f));
         toolbar.add(unsavedLabel);
-        toolbar.addSeparator(new Dimension(12, 0));
+        toolbar.addSeparator(new Dimension(14, 0));
+        cancelButton.setFocusable(false);
+        cancelButton.setToolTipText("Sair da edição sem salvar (Esc)");
+        cancelButton.setForeground(Palette.TEXT_ON_DARK);
+        cancelButton.putClientProperty("JButton.buttonType", "toolBarButton");
+        cancelButton.setMargin(new Insets(5, 14, 5, 14));
         toolbar.add(cancelButton);
-        saveButton.putClientProperty("JButton.buttonType", "default");
-        toolbar.add(saveButton);
+        toolbar.add(Box.createHorizontalStrut(6));
+        saveButton.setFocusable(false);
+        saveButton.setToolTipText("Salvar alterações (Ctrl+S)");
+        saveButton.setBackground(Palette.ACCENT);
+        saveButton.setForeground(java.awt.Color.WHITE);
+        saveButton.putClientProperty("FlatLaf.style", "hoverBackground: #2a78e4; pressedBackground: #145ab8;"
+                + " disabledBackground: #2b3a4d; disabledText: #7f8da0; borderColor: #1867d6");
+        saveButton.setFont(saveButton.getFont().deriveFont(Font.BOLD));
+        saveButton.setMargin(new Insets(5, 18, 5, 18));
+        // Fora do JToolBar direto, para o FlatLaf pintar Salvar como botão principal (preenchido).
+        JPanel saveHolder = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0)) {
+            @Override public Dimension getMaximumSize() { return getPreferredSize(); }
+        };
+        saveHolder.setOpaque(false);
+        saveHolder.add(saveButton);
+        saveButton.setVisible(true);
+        toolbar.add(saveHolder);
         return toolbar;
     }
 
@@ -417,7 +432,23 @@ public final class ProcessPanel extends JPanel {
         return split;
     }
 
+    /** Indicador ao lado de Salvar: discreto enquanto não há mudanças, âmbar quando há algo a salvar. */
+    private void showEditState(boolean hasChanges) {
+        unsavedLabel.setText(hasChanges ? "● Alterações não salvas" : "Editando — nenhuma alteração ainda");
+        unsavedLabel.setForeground(hasChanges ? Palette.WARNING : Palette.TEXT_ON_DARK_MUTED);
+    }
+
     private void installShortcuts() {
+        getInputMap(WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(
+                KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "cancelEditing");
+        getActionMap().put("cancelEditing", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent event) {
+                if (editing && cancelButton.isEnabled()) {
+                    cancelButton.doClick();
+                }
+            }
+        });
         getInputMap(WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(
                 KeyStroke.getKeyStroke(KeyEvent.VK_S, InputEvent.CTRL_DOWN_MASK), "saveProcess");
         getActionMap().put("saveProcess", new AbstractAction() {
@@ -492,7 +523,7 @@ public final class ProcessPanel extends JPanel {
             return;
         }
         dirty = true;
-        unsavedLabel.setText("● Alterações não salvas");
+        showEditState(true);
         updateActionState();
     }
 
@@ -508,15 +539,9 @@ public final class ProcessPanel extends JPanel {
         deleteButton.setEnabled(editAuthorized && hasSelection && !editing);
         refreshMenuItem.setEnabled(!editing || !dirty);
         viewerPanel.setEditAvailable(editButton.isEnabled());
-        undoButton.setVisible(editing);
-        redoButton.setVisible(editing);
-        undoButton.setEnabled(editing && editorPanel.canUndo());
-        redoButton.setEnabled(editing && editorPanel.canRedo());
         tree.setEnabled(!editing);
-        saveButton.setVisible(editing);
+        saveButton.getParent().setVisible(editing);
         cancelButton.setVisible(editing);
-        saveButton.setContentAreaFilled(editing);
-        saveButton.setBackground(Palette.ACCENT);
         saveButton.setEnabled(editAuthorized && editing && dirty);
         cancelButton.setEnabled(editing);
     }
