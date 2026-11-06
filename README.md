@@ -34,6 +34,18 @@ Recentes e favoritos são separados automaticamente pelo perfil do Windows em us
 mvn -DskipTests package
 ```
 
+## Publicar na pasta de rede
+
+`Publicar-na-rede.bat` (ou `scripts\publicar-na-rede.ps1`) publica a versão do GitHub em `G:\Suporte\Suporte\Helplixo`:
+
+1. Recusa publicar se houver alterações locais fora do GitHub e roda `git pull`.
+2. Compila e roda os testes (`mvn clean package`).
+3. Mostra a versão da rede e a nova e pede que se digite `PUBLICAR`.
+4. Guarda o JAR atual em `_versoes-anteriores\<data-hora>\` (mantém as 5 últimas) e registra em `publicacoes.log`.
+5. Substitui só o `.jar` e confere o hash. Pastas de dados não são tocadas.
+
+Rode primeiro com `-Simular` para conferir sem alterar nada. Se o Helplixo estiver aberto em alguma máquina, o JAR fica bloqueado e o script pede para tentar de novo. Para voltar à versão anterior: `Publicar-na-rede.bat -Restaurar`.
+
 ## Fluxo para disponibilizar uma versão
 
 1. Desenvolver e validar nesta cópia, usando `data-dev/`.
