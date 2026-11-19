@@ -48,9 +48,17 @@ public final class MainFrame extends JFrame {
         setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         setMinimumSize(new Dimension(Constants.MINIMUM_WIDTH, Constants.MINIMUM_HEIGHT));
         setLayout(new BorderLayout());
-        java.net.URL iconResource = MainFrame.class.getResource("/icons/logo_64.png");
-        if (iconResource != null) {
-            setIconImage(new javax.swing.ImageIcon(iconResource).getImage());
+        // Vários tamanhos: o Windows escolhe o melhor para a barra de título e a barra de tarefas.
+        java.util.List<java.awt.Image> icons = new java.util.ArrayList<>();
+        for (String name : new String[] {"monkey_16", "monkey_20", "monkey_24", "monkey_32",
+                "monkey_48", "monkey_64", "monkey_128", "monkey"}) {
+            java.net.URL iconResource = MainFrame.class.getResource("/icons/" + name + ".png");
+            if (iconResource != null) {
+                icons.add(new javax.swing.ImageIcon(iconResource).getImage());
+            }
+        }
+        if (!icons.isEmpty()) {
+            setIconImages(icons);
         }
         initializeCards();
         installShortcuts();

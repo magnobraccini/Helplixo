@@ -307,7 +307,7 @@ public final class TopBar extends JPanel {
     }
 
     private JLabel buildLogo() {
-        java.net.URL resource = TopBar.class.getResource("/icons/logo_32.png");
+        java.net.URL resource = TopBar.class.getResource("/icons/monkey_32.png");
         if (resource != null) {
             return new JLabel(new ImageIcon(resource));
         }
