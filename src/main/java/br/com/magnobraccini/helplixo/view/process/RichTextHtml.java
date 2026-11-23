@@ -32,6 +32,10 @@ final class RichTextHtml {
                 + "h2 { font-size: 18pt; font-weight: bold; color: #1c2531; margin-top: 14px; margin-bottom: 6px; }"
                 + "h3 { font-size: 15pt; font-weight: bold; color: #2b3a4d; margin-top: 12px; margin-bottom: 4px; }"
                 + "ul, ol { margin-top: 2px; margin-bottom: 8px; margin-left: 26px; }"
+                // Os números das listas numeradas são desenhados pelo NumberedHtmlKit (1. → a. → i.).
+                + "ol { list-style-type: none; margin-left: 32px; }"
+                // Sublistas sem espaço extra embaixo, senão abre um buraco antes do item seguinte.
+                + "li ol, li ul { margin-top: 2px; margin-bottom: 0px; }"
                 + "li { margin-top: 2px; margin-bottom: 3px; }"
                 + "blockquote { margin-left: 4px; margin-right: 0; margin-top: 6px; margin-bottom: 8px;"
                 + " padding-left: 12px; border-left-width: 3px; border-left-style: solid; border-left-color: #9fb3cc; color: #46505e; }"
@@ -70,6 +74,13 @@ final class RichTextHtml {
                             appendSafeAttribute(output, "color", attrs.getAttribute(HTML.Attribute.COLOR), "#[0-9a-fA-F]{3,8}");
                         }
                         if (name.equals("a")) appendHref(output, attrs.getAttribute(HTML.Attribute.HREF));
+                        if (name.equals("ol")) {
+                            appendSafeAttribute(output, "start", attrs.getAttribute(HTML.Attribute.START), "[0-9]{1,4}");
+                            appendSafeAttribute(output, "class", attrs.getAttribute(HTML.Attribute.CLASS), NumberedHtmlKit.CONTINUE_CLASS);
+                        }
+                        if (name.matches("h[1-3]")) {
+                            appendSafeAttribute(output, "class", attrs.getAttribute(HTML.Attribute.CLASS), NumberedHtmlKit.HEADING_CLASS);
+                        }
                         if (name.equals("p") || name.equals("div") || name.matches("h[1-6]")) appendAlignment(output, attrs.getAttribute(HTML.Attribute.ALIGN));
                         appendSafeStyle(output, attrs.getAttribute(HTML.Attribute.STYLE));
                         output.append('>');

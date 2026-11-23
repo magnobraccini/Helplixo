@@ -62,6 +62,8 @@ public final class ProcessViewerPanel extends JPanel {
 
         documentPane.setEditable(false);
         documentPane.setContentType("text/html");
+        // Mesmo kit do editor: listas 1./a./i., início e continuação, títulos numerados.
+        documentPane.setEditorKit(new NumberedHtmlKit());
         documentPane.setBackground(Palette.CONTENT_BACKGROUND);
         documentPane.setForeground(Palette.CONTENT_TEXT_PRIMARY);
         documentPane.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, true);

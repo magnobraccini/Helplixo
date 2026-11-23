@@ -24,6 +24,12 @@ A tela de edição usa a mesma disposição da leitura: título e resumo no topo
 
 O editor de passos tem uma barra única que reflete a formatação onde está o cursor: estilos de parágrafo (texto, títulos 1–3, citação e bloco de código), negrito, itálico, sublinhado, tachado, código inline para comandos, cor do texto, realce, listas que convertem os parágrafos selecionados, recuo, alinhamento, links e divisores. Parágrafos simples continuam sem numeração automática; a numeração aparece quando uma lista numerada é escolhida. Atalhos principais: Ctrl+B/I/U, Ctrl+Shift+C (código), Ctrl+Shift+7/8 (listas), Ctrl+Alt+0–3 (estilos), Ctrl+K (link), Ctrl+Shift+V (colar sem formatação), Ctrl+[ e Ctrl+] (recuo), Ctrl+S (salvar) e Esc (sair da edição). Desfazer agrupa a digitação por trecho e cada campo tem o próprio histórico.
 
+Numeração no estilo do Word:
+
+- **Listas em vários níveis:** dentro de uma lista, Tab desce um nível e Shift+Tab sobe (os botões de recuo e Ctrl+[ / Ctrl+] fazem o mesmo). A numeração segue 1. → a. → i. conforme o nível. Enter num item vazio sobe um nível ou sai da lista, e Backspace no começo do item tira o número.
+- **Reiniciar ou continuar:** clique com o botão direito num item numerado para "Reiniciar numeração em 1", "Continuar numeração" (lista que vem depois de outra) ou "Definir valor da numeração…".
+- **Títulos numerados:** o botão **1.1** da barra numera todos os Título 1, 2 e 3 como 1. / 1.1 / 1.1.1. Os números são recalculados sozinhos quando uma seção é incluída, removida ou movida.
+
 Na primeira execução da versão 0.5.0, passos do formato estruturado antigo são convertidos para HTML editável. Antes da conversão, cada arquivo original é copiado para `data/backups/migrations/steps-rich-text-v1/`.
 
 Recentes e favoritos são separados automaticamente pelo perfil do Windows em uso, sem tela de login. Processos, ramais e os demais conteúdos permanecem compartilhados no diretório de dados.
