@@ -66,7 +66,7 @@ import java.util.function.Consumer;
 public final class RichTextEditorPanel extends JPanel {
     private static final int SHORTCUT = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
 
-    private final HTMLEditorKit editorKit = new HTMLEditorKit();
+    private final HTMLEditorKit editorKit = new NumberedHtmlKit();
     private final JEditorPane editor = new JEditorPane();
     private final TextUndo history;
     private final JLabel statsLabel = new JLabel(" ");
@@ -80,6 +80,7 @@ public final class RichTextEditorPanel extends JPanel {
     private JToggleButton codeButton;
     private JToggleButton bulletButton;
     private JToggleButton numberButton;
+    private JToggleButton headingNumbersButton;
     private JButton alignButton;
     private JButton undoButton;
     private JButton redoButton;
@@ -134,11 +135,13 @@ public final class RichTextEditorPanel extends JPanel {
         add(buildFooter(), BorderLayout.SOUTH);
 
         installShortcuts();
+        installListContextMenu();
         editor.addCaretListener(event -> SwingUtilities.invokeLater(this::syncToolbar));
         history.onStateChange(this::syncHistory);
         document.addDocumentListener(new javax.swing.event.DocumentListener() {
-            @Override public void insertUpdate(javax.swing.event.DocumentEvent e) { scheduleStats(); }
-            @Override public void removeUpdate(javax.swing.event.DocumentEvent e) { scheduleStats(); }
+            // Repinta tudo: um item ou título novo muda o número dos que vêm depois.
+            @Override public void insertUpdate(javax.swing.event.DocumentEvent e) { scheduleStats(); editor.repaint(); }
+            @Override public void removeUpdate(javax.swing.event.DocumentEvent e) { scheduleStats(); editor.repaint(); }
             @Override public void changedUpdate(javax.swing.event.DocumentEvent e) { }
         });
         syncToolbar();
@@ -245,10 +248,14 @@ public final class RichTextEditorPanel extends JPanel {
 
         bulletButton = iconToggle(EditorIcons.of(EditorIcons.BULLETS), "Lista com marcadores", "Ctrl+Shift+8", () -> toggleList("ul"));
         numberButton = iconToggle(EditorIcons.of(EditorIcons.NUMBERS), "Lista numerada", "Ctrl+Shift+7", () -> toggleList("ol"));
+        headingNumbersButton = textToggle("1.1", Font.PLAIN, "Numerar títulos (1. / 1.1 / 1.1.1)", null, this::toggleHeadingNumbers);
+        headingNumbersButton.setFont(headingNumbersButton.getFont().deriveFont(Font.BOLD, 11.5f));
+        headingNumbersButton.setPreferredSize(new Dimension(34, 28));
         bar.add(bulletButton);
         bar.add(numberButton);
-        bar.add(iconButton(EditorIcons.of(EditorIcons.OUTDENT), "Diminuir recuo", "Ctrl+[", () -> indent(-1)));
-        bar.add(iconButton(EditorIcons.of(EditorIcons.INDENT), "Aumentar recuo", "Ctrl+]", () -> indent(1)));
+        bar.add(headingNumbersButton);
+        bar.add(iconButton(EditorIcons.of(EditorIcons.OUTDENT), "Diminuir recuo / nível da lista", "Shift+Tab", () -> indent(-1)));
+        bar.add(iconButton(EditorIcons.of(EditorIcons.INDENT), "Aumentar recuo / nível da lista", "Tab", () -> indent(1)));
         alignButton = iconButton(EditorIcons.of(EditorIcons.align(0)), "Alinhamento", null, null);
         alignButton.addActionListener(event -> showAlignMenu());
         bar.add(alignButton);
@@ -334,6 +341,7 @@ public final class RichTextEditorPanel extends JPanel {
             String kind = blockKind(paragraph);
             bulletButton.setSelected(kind.equals("ul"));
             numberButton.setSelected(kind.equals("ol"));
+            headingNumbersButton.setSelected(hasNumberedHeadings());
             styleCombo.setSelectedItem(switch (kind) {
                 case "h1" -> BlockStyle.HEADING_1;
                 case "h2" -> BlockStyle.HEADING_2;
@@ -554,13 +562,222 @@ public final class RichTextEditorPanel extends JPanel {
     // ---------------------------------------------------------------- blocos (estilo, listas)
 
     private void setBlockStyle(BlockStyle style) {
-        convertSelectedBlocks(kind -> style.tag);
+        boolean numbered = style.tag.matches("h[1-3]") && hasNumberedHeadings();
+        rebuildSelectedBlocks(item -> {
+            if (!item.selected) return;
+            item.kind = style.tag;
+            item.level = 0;
+            item.numbered = numbered;
+        });
     }
 
     /** Liga/desliga a lista: converte os parágrafos selecionados, troca o tipo ou volta a parágrafos. */
     private void toggleList(String listTag) {
         boolean allInList = selectedParagraphs().stream().allMatch(p -> blockKind(p).equals(listTag));
-        convertSelectedBlocks(kind -> allInList ? "p" : listTag);
+        rebuildSelectedBlocks(item -> {
+            if (!item.selected) return;
+            if (allInList) {
+                item.kind = "p";
+                item.level = 0;
+            } else {
+                if (!item.isList()) item.level = 0;
+                item.kind = listTag;
+            }
+        });
+    }
+
+    // ---------------------------------------------------------------- listas em níveis (estilo Word)
+
+    private static final int MAX_LIST_LEVEL = 5;
+
+    private static boolean isListKind(String kind) { return kind.equals("ul") || kind.equals("ol"); }
+
+    private boolean caretInList() {
+        return isListKind(blockKind(document().getParagraphElement(editor.getSelectionStart())));
+    }
+
+    private boolean selectionAllInLists() {
+        return selectedParagraphs().stream().allMatch(p -> isListKind(blockKind(p)));
+    }
+
+    /** Tab / Shift+Tab numa lista: desce ou sobe um nível. Subir do primeiro nível sai da lista. */
+    private void changeListLevel(int direction) {
+        rebuildSelectedBlocks(item -> {
+            if (!item.selected || !item.isList()) return;
+            item.level += direction;
+            if (item.level < 0) {
+                item.kind = "p";
+                item.level = 0;
+            }
+        });
+    }
+
+    /** Enter: item vazio sobe um nível ou sai da lista; senão quebra a linha e cria um item novo. */
+    private void listEnter(Action fallback, ActionEvent event) {
+        Element paragraph = document().getParagraphElement(editor.getSelectionStart());
+        if (editor.getSelectionStart() == editor.getSelectionEnd() && isListKind(blockKind(paragraph))
+                && plainText(paragraph).isBlank()) {
+            changeListLevel(-1);
+            return;
+        }
+        if (!isListKind(blockKind(paragraph))) {
+            fallback.actionPerformed(event);
+            return;
+        }
+        // A quebra padrão do Swing às vezes cria um parágrafo solto dentro do mesmo item; a
+        // reconstrução em seguida transforma cada linha em seu próprio item numerado.
+        history.compound(() -> {
+            fallback.actionPerformed(event);
+            rebuildSelectedBlocks(item -> { });
+        });
+    }
+
+    /** Backspace no começo de um item: tira um nível (ou o número, no primeiro nível), como no Word. */
+    private void listBackspace(Action fallback, ActionEvent event) {
+        int caret = editor.getSelectionStart();
+        Element paragraph = document().getParagraphElement(caret);
+        if (caret == editor.getSelectionEnd() && caret == paragraph.getStartOffset() && isListKind(blockKind(paragraph))) {
+            changeListLevel(-1);
+            return;
+        }
+        fallback.actionPerformed(event);
+    }
+
+    private enum NumberingChange { RESTART, CONTINUE, SET_VALUE }
+
+    /** Reiniciar em 1, continuar a lista anterior ou definir o número do item onde está o cursor. */
+    private void changeNumbering(NumberingChange change, int value) {
+        rebuildSelectedBlocks(item -> {
+            if (!item.selected || !item.kind.equals("ol")) return;
+            switch (change) {
+                case RESTART -> { item.newList = true; item.start = null; item.continues = false; }
+                case CONTINUE -> { if (item.newList) { item.start = null; item.continues = true; } }
+                case SET_VALUE -> { item.newList = true; item.start = Integer.toString(value); item.continues = false; }
+            }
+        });
+    }
+
+    private void askNumberingValue() {
+        Element paragraph = document().getParagraphElement(editor.getSelectionStart());
+        String current = listItem(paragraph) == null ? "1"
+                : NumberedHtmlKit.listLabel(listItem(paragraph)).replaceAll("[^0-9]", "");
+        Object answer = JOptionPane.showInputDialog(this, "Começar a numeração deste item em:",
+                "Definir valor da numeração", JOptionPane.PLAIN_MESSAGE, null, null, current.isEmpty() ? "1" : current);
+        if (answer == null) return;
+        try {
+            int value = Integer.parseInt(answer.toString().trim());
+            if (value < 0 || value > 9999) throw new NumberFormatException();
+            changeNumbering(NumberingChange.SET_VALUE, value);
+        } catch (NumberFormatException exception) {
+            JOptionPane.showMessageDialog(this, "Informe um número inteiro entre 0 e 9999.",
+                    "Valor inválido", JOptionPane.WARNING_MESSAGE);
+        }
+    }
+
+    /** Elemento {@code <li>} que contém o parágrafo, ou {@code null}. */
+    private static Element listItem(Element paragraph) {
+        for (Element e = paragraph; e != null; e = e.getParentElement()) {
+            if (NumberedHtmlKit.nameOf(e) == HTML.Tag.LI) return e;
+        }
+        return null;
+    }
+
+    /** Listas (ol/ul) que envolvem o parágrafo, da mais interna para a mais externa. */
+    private static List<Element> listAncestors(Element paragraph) {
+        List<Element> lists = new ArrayList<>();
+        for (Element e = paragraph.getParentElement(); e != null && !isBody(e); e = e.getParentElement()) {
+            Object name = NumberedHtmlKit.nameOf(e);
+            if (name == HTML.Tag.OL || name == HTML.Tag.UL) lists.add(e);
+        }
+        return lists;
+    }
+
+    private void installListContextMenu() {
+        editor.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override public void mousePressed(java.awt.event.MouseEvent event) { maybeShow(event); }
+            @Override public void mouseReleased(java.awt.event.MouseEvent event) { maybeShow(event); }
+
+            private void maybeShow(java.awt.event.MouseEvent event) {
+                if (!event.isPopupTrigger()) return;
+                int position = editor.viewToModel2D(event.getPoint());
+                if (position >= 0 && (position < editor.getSelectionStart() || position > editor.getSelectionEnd())) {
+                    editor.setCaretPosition(position);
+                }
+                buildContextMenu().show(editor, event.getX(), event.getY());
+            }
+        });
+    }
+
+    private JPopupMenu buildContextMenu() {
+        JPopupMenu menu = new JPopupMenu();
+        menu.add(menuItem("Recortar", KeyStroke.getKeyStroke(KeyEvent.VK_X, SHORTCUT), editor::cut));
+        menu.add(menuItem("Copiar", KeyStroke.getKeyStroke(KeyEvent.VK_C, SHORTCUT), editor::copy));
+        menu.add(menuItem("Colar", KeyStroke.getKeyStroke(KeyEvent.VK_V, SHORTCUT), editor::paste));
+        Element paragraph = document().getParagraphElement(editor.getSelectionStart());
+        if (blockKind(paragraph).equals("ol")) {
+            List<Element> lists = listAncestors(paragraph);
+            Element list = lists.get(0);
+            boolean firstOfList = document().getParagraphElement(list.getStartOffset()) == paragraph;
+            menu.addSeparator();
+            menu.add(menuItem("Reiniciar numeração em 1", null, () -> changeNumbering(NumberingChange.RESTART, 1)));
+            JMenuItem continueItem = menuItem("Continuar numeração", null, () -> changeNumbering(NumberingChange.CONTINUE, 0));
+            continueItem.setEnabled(firstOfList && NumberedHtmlKit.previousOrderedList(list) != null
+                    && !NumberedHtmlKit.hasClass(list, NumberedHtmlKit.CONTINUE_CLASS));
+            continueItem.setToolTipText("Disponível no primeiro item de uma lista que vem depois de outra lista numerada.");
+            menu.add(continueItem);
+            menu.add(menuItem("Definir valor da numeração…", null, this::askNumberingValue));
+        }
+        if (isListKind(blockKind(paragraph))) {
+            menu.addSeparator();
+            menu.add(menuItem("Aumentar nível da lista", KeyStroke.getKeyStroke(KeyEvent.VK_TAB, 0), () -> changeListLevel(1)));
+            menu.add(menuItem("Diminuir nível da lista", KeyStroke.getKeyStroke(KeyEvent.VK_TAB, InputEvent.SHIFT_DOWN_MASK), () -> changeListLevel(-1)));
+        }
+        return menu;
+    }
+
+    // ---------------------------------------------------------------- títulos numerados
+
+    private List<Element> headings() {
+        List<Element> found = new ArrayList<>();
+        collectHeadings(document().getDefaultRootElement(), found);
+        return found;
+    }
+
+    private static void collectHeadings(Element element, List<Element> found) {
+        if (NumberedHtmlKit.headingLevel(element) > 0) { found.add(element); return; }
+        for (int i = 0; i < element.getElementCount(); i++) collectHeadings(element.getElement(i), found);
+    }
+
+    private boolean hasNumberedHeadings() {
+        return headings().stream().anyMatch(h -> NumberedHtmlKit.hasClass(h, NumberedHtmlKit.HEADING_CLASS));
+    }
+
+    /** Liga a numeração 1. / 1.1 / 1.1.1 em todos os títulos (ou desliga, se todos já estão numerados). */
+    private void toggleHeadingNumbers() {
+        List<Element> headings = headings();
+        if (headings.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Aplique \"Título 1\", \"Título 2\" ou \"Título 3\" às seções do texto"
+                    + " (seletor de estilo) e depois use este botão para numerá-las.", "Numerar títulos",
+                    JOptionPane.INFORMATION_MESSAGE);
+            syncToolbar();
+            return;
+        }
+        boolean enable = !headings.stream().allMatch(h -> NumberedHtmlKit.hasClass(h, NumberedHtmlKit.HEADING_CLASS));
+        int selectionStart = editor.getSelectionStart();
+        int selectionEnd = editor.getSelectionEnd();
+        history.compound(() -> {
+            for (int i = headings.size() - 1; i >= 0; i--) {
+                Element heading = headings.get(i);
+                String tag = "h" + NumberedHtmlKit.headingLevel(heading);
+                String inline = inlineHtml(heading);
+                String markup = '<' + tag + alignAttribute(heading) + (enable ? " class=\"" + NumberedHtmlKit.HEADING_CLASS + "\"" : "")
+                        + '>' + (inline.isBlank() ? "&nbsp;" : inline) + "</" + tag + '>';
+                try { document().setOuterHTML(heading, markup); } catch (BadLocationException | IOException ignored) { }
+            }
+        });
+        int length = document().getLength();
+        editor.select(Math.min(selectionStart, length), Math.min(selectionEnd, length));
+        syncToolbar();
     }
 
     private List<Element> selectedParagraphs() {
@@ -579,12 +796,38 @@ public final class RichTextEditorPanel extends JPanel {
         return paragraphs;
     }
 
+    /** Um parágrafo do texto, com tudo o que é preciso para escrevê-lo de novo. */
+    static final class BlockItem {
+        String kind;          // p, h1–h3, blockquote, pre, ul, ol
+        int level;            // nível na lista (0 = primeiro nível)
+        final int originalLevel;
+        String inline;
+        String plain;         // texto puro, usado se o item virar bloco de código
+        String align;
+        boolean selected;
+        boolean newList;      // primeiro item de uma lista própria (não junta com a anterior)
+        String start;         // <ol start="N">
+        boolean continues;    // <ol class="continua">
+        boolean numbered;     // <hN class="num">
+
+        BlockItem(String kind, int level, String inline, String align) {
+            this.kind = kind;
+            this.level = level;
+            this.originalLevel = level;
+            this.inline = inline;
+            this.align = align;
+        }
+
+        boolean isList() { return isListKind(kind); }
+    }
+
     /**
-     * Reescreve os blocos de nível superior tocados pela seleção. Cada parágrafo vira um item com
-     * tipo + HTML inline; os selecionados recebem o novo tipo e o conjunto é serializado de novo,
-     * agrupando itens de lista, citação e código consecutivos. Preserva negrito, cores e links.
+     * Reescreve os blocos de nível superior tocados pela seleção. Cada parágrafo vira um
+     * {@link BlockItem}; {@code change} altera os itens e o conjunto é escrito de novo em HTML,
+     * com listas aninhadas de verdade ({@code <li>texto<ol>…</ol></li>}). Preserva negrito, cores,
+     * links, o início/continuação das listas e a numeração dos títulos.
      */
-    private void convertSelectedBlocks(java.util.function.UnaryOperator<String> target) {
+    private void rebuildSelectedBlocks(java.util.function.Consumer<BlockItem> change) {
         HTMLDocument document = document();
         List<Element> selected = selectedParagraphs();
         List<Element> tops = new ArrayList<>();
@@ -594,40 +837,25 @@ public final class RichTextEditorPanel extends JPanel {
         }
         if (tops.isEmpty() || isBody(tops.get(0))) return;
         int firstStart = tops.get(0).getStartOffset();
-        int caretOffset = editor.getCaretPosition() - firstStart;
+        int selectionStart = editor.getSelectionStart() - firstStart;
+        int selectionEnd = editor.getSelectionEnd() - firstStart;
 
-        StringBuilder html = new StringBuilder();
-        String openContainer = null;
+        List<BlockItem> items = new ArrayList<>();
         for (Element top : tops) {
             for (Element paragraph : paragraphsWithin(top)) {
                 boolean artifact = paragraph.getAttributes().getAttribute(StyleConstants.NameAttribute) == HTML.Tag.IMPLIED
                         && isBody(paragraph.getParentElement()) && plainText(paragraph).isBlank();
                 if (artifact && tops.size() > 1) continue;
-                String kind = blockKind(paragraph);
-                String newKind = selected.contains(paragraph) ? target.apply(kind) : kind;
-                String container = switch (newKind) { case "ul", "ol", "blockquote", "pre" -> newKind; default -> null; };
-                if (openContainer != null && !openContainer.equals(container)) {
-                    html.append("</").append(openContainer).append('>');
-                    openContainer = null;
-                }
-                if (container != null && openContainer == null) {
-                    html.append('<').append(container).append('>');
-                    openContainer = container;
-                }
-                String inline = newKind.equals("pre") ? escape(plainText(paragraph)) : inlineHtml(paragraph);
-                if (inline.isBlank()) inline = newKind.equals("pre") ? " " : "&nbsp;";
-                switch (newKind) {
-                    case "ul", "ol" -> html.append("<li>").append(inline).append("</li>");
-                    case "blockquote" -> html.append("<p>").append(inline).append("</p>");
-                    case "pre" -> html.append(inline).append('\n');
-                    case "h1", "h2", "h3" -> html.append('<').append(newKind).append('>').append(inline)
-                            .append("</").append(newKind).append('>');
-                    default -> html.append("<p").append(alignAttribute(paragraph)).append('>').append(inline).append("</p>");
-                }
+                items.add(toItem(paragraph, selected.contains(paragraph)));
             }
         }
-        if (openContainer != null) html.append("</").append(openContainer).append('>');
-        String markup = html.toString().replace("\n</pre>", "</pre>");
+        for (BlockItem item : items) change.accept(item);
+        normalizeLevels(items);
+        for (BlockItem item : items) {
+            // Bloco de código guarda só texto puro (sem negrito, links etc.).
+            if (item.kind.equals("pre") && item.plain != null) item.inline = escape(item.plain);
+        }
+        String markup = serialize(items);
 
         history.compound(() -> {
             try {
@@ -635,9 +863,112 @@ public final class RichTextEditorPanel extends JPanel {
                 document.setOuterHTML(tops.get(0), markup);
             } catch (BadLocationException | IOException ignored) { }
         });
-        int caret = Math.max(0, Math.min(document.getLength(), firstStart + Math.max(0, caretOffset)));
-        editor.setCaretPosition(caret);
+        int length = document.getLength();
+        int start = Math.max(0, Math.min(length, firstStart + Math.max(0, selectionStart)));
+        int end = Math.max(start, Math.min(length, firstStart + Math.max(0, selectionEnd)));
+        editor.select(start, end);
         syncToolbar();
+    }
+
+    private BlockItem toItem(Element paragraph, boolean selected) {
+        String kind = blockKind(paragraph);
+        String inline = kind.equals("pre") ? escape(plainText(paragraph)) : inlineHtml(paragraph);
+        List<Element> lists = isListKind(kind) ? listAncestors(paragraph) : List.of();
+        BlockItem item = new BlockItem(kind, Math.max(0, lists.size() - 1), inline, alignAttribute(paragraph));
+        item.selected = selected;
+        item.plain = plainText(paragraph);
+        if (!lists.isEmpty()) {
+            Element list = lists.get(0);
+            item.newList = document().getParagraphElement(list.getStartOffset()) == paragraph;
+            if (item.newList && NumberedHtmlKit.nameOf(list) == HTML.Tag.OL) {
+                Object start = list.getAttributes().getAttribute(HTML.Attribute.START);
+                item.start = start == null ? null : start.toString();
+                item.continues = NumberedHtmlKit.hasClass(list, NumberedHtmlKit.CONTINUE_CLASS);
+            }
+            return item;
+        }
+        if (kind.matches("h[1-3]")) {
+            for (Element e = paragraph; e != null && !isBody(e); e = e.getParentElement()) {
+                if (NumberedHtmlKit.headingLevel(e) > 0) {
+                    item.numbered = NumberedHtmlKit.hasClass(e, NumberedHtmlKit.HEADING_CLASS);
+                    break;
+                }
+            }
+        }
+        return item;
+    }
+
+    /** Um item só pode descer um nível por vez, e uma lista sempre começa no primeiro nível. */
+    static void normalizeLevels(List<BlockItem> items) {
+        int previousLevel = -1;
+        for (BlockItem item : items) {
+            if (!item.isList()) {
+                item.level = 0;
+                previousLevel = -1;
+                continue;
+            }
+            item.level = Math.max(0, Math.min(Math.min(item.level, previousLevel + 1), MAX_LIST_LEVEL));
+            previousLevel = item.level;
+        }
+    }
+
+    /** Escreve os itens em HTML, abrindo e fechando listas aninhadas conforme o nível. */
+    static String serialize(List<BlockItem> items) {
+        StringBuilder html = new StringBuilder();
+        java.util.ArrayDeque<String> lists = new java.util.ArrayDeque<>();
+        String container = null;
+        for (BlockItem item : items) {
+            String inline = item.inline == null || item.inline.isBlank()
+                    ? (item.kind.equals("pre") ? " " : "&nbsp;") : item.inline;
+            if (!item.isList()) closeLists(html, lists, 0);
+            String wanted = switch (item.kind) { case "blockquote", "pre" -> item.kind; default -> null; };
+            if (container != null && !container.equals(wanted)) {
+                html.append("</").append(container).append('>');
+                container = null;
+            }
+            if (wanted != null && container == null) {
+                html.append('<').append(wanted).append('>');
+                container = wanted;
+            }
+            if (item.isList()) {
+                int target = item.level + 1;
+                closeLists(html, lists, target);
+                // Mesmo nível: fecha o item anterior; troca de tipo ou "reiniciar" abre uma lista nova.
+                boolean split = item.newList && item.level == item.originalLevel;
+                if (lists.size() == target && (!lists.peek().equals(item.kind) || split)) {
+                    html.append("</li></").append(lists.pop()).append('>');
+                }
+                if (lists.size() == target) html.append("</li>");
+                while (lists.size() < target) {
+                    html.append('<').append(item.kind);
+                    if (lists.size() == target - 1 && item.kind.equals("ol")) {
+                        if (item.continues) html.append(" class=\"").append(NumberedHtmlKit.CONTINUE_CLASS).append('"');
+                        else if (item.start != null && item.start.matches("[0-9]{1,4}") && !item.start.equals("1")) {
+                            html.append(" start=\"").append(item.start).append('"');
+                        }
+                    }
+                    html.append('>');
+                    lists.push(item.kind);
+                }
+                html.append("<li>").append(inline);
+                continue;
+            }
+            switch (item.kind) {
+                case "blockquote" -> html.append("<p>").append(inline).append("</p>");
+                case "pre" -> html.append(inline).append('\n');
+                case "h1", "h2", "h3" -> html.append('<').append(item.kind).append(item.align)
+                        .append(item.numbered ? " class=\"" + NumberedHtmlKit.HEADING_CLASS + "\"" : "")
+                        .append('>').append(inline).append("</").append(item.kind).append('>');
+                default -> html.append("<p").append(item.align).append('>').append(inline).append("</p>");
+            }
+        }
+        closeLists(html, lists, 0);
+        if (container != null) html.append("</").append(container).append('>');
+        return html.toString().replace("\n</pre>", "</pre>");
+    }
+
+    private static void closeLists(StringBuilder html, java.util.ArrayDeque<String> lists, int keep) {
+        while (lists.size() > keep) html.append("</li></").append(lists.pop()).append('>');
     }
 
     private List<Element> paragraphsWithin(Element top) {
@@ -764,6 +1095,10 @@ public final class RichTextEditorPanel extends JPanel {
     }
 
     private void indent(int direction) {
+        if (selectionAllInLists()) {
+            changeListLevel(direction);
+            return;
+        }
         history.compound(() -> {
             for (Element paragraph : selectedParagraphs()) {
                 int existing = leftIndentOf(paragraph);
@@ -939,6 +1274,20 @@ public final class RichTextEditorPanel extends JPanel {
         bind(KeyEvent.VK_R, SHORTCUT | InputEvent.SHIFT_DOWN_MASK, "rich-align-right", () -> align(StyleConstants.ALIGN_RIGHT));
         bind(KeyEvent.VK_J, SHORTCUT | InputEvent.SHIFT_DOWN_MASK, "rich-align-justify", () -> align(StyleConstants.ALIGN_JUSTIFIED));
         bind(KeyEvent.VK_V, SHORTCUT | InputEvent.SHIFT_DOWN_MASK, "rich-paste-plain", this::pastePlainText);
+        // Listas estilo Word: Tab/Shift+Tab mudam o nível, Enter num item vazio sai da lista,
+        // Backspace no começo do item tira o número. Fora das listas, as teclas agem como sempre.
+        Action insertBreak = editor.getActionMap().get(javax.swing.text.DefaultEditorKit.insertBreakAction);
+        Action deletePrevious = editor.getActionMap().get(javax.swing.text.DefaultEditorKit.deletePrevCharAction);
+        Action insertTab = editor.getActionMap().get(javax.swing.text.DefaultEditorKit.insertTabAction);
+        bindEvent(KeyEvent.VK_ENTER, 0, "rich-list-enter", event -> listEnter(insertBreak, event));
+        bindEvent(KeyEvent.VK_BACK_SPACE, 0, "rich-list-backspace", event -> listBackspace(deletePrevious, event));
+        bindEvent(KeyEvent.VK_TAB, 0, "rich-list-tab", event -> {
+            if (caretInList()) changeListLevel(1);
+            else if (insertTab != null) insertTab.actionPerformed(event);
+        });
+        bindEvent(KeyEvent.VK_TAB, InputEvent.SHIFT_DOWN_MASK, "rich-list-shift-tab", event -> {
+            if (caretInList()) changeListLevel(-1);
+        });
         BlockStyle[] styles = {BlockStyle.PARAGRAPH, BlockStyle.HEADING_1, BlockStyle.HEADING_2, BlockStyle.HEADING_3};
         for (int i = 0; i < styles.length; i++) {
             BlockStyle style = styles[i];
@@ -950,6 +1299,13 @@ public final class RichTextEditorPanel extends JPanel {
         editor.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke(key, modifiers), name);
         editor.getActionMap().put(name, new AbstractAction() {
             @Override public void actionPerformed(ActionEvent event) { operation.run(); }
+        });
+    }
+
+    private void bindEvent(int key, int modifiers, String name, Consumer<ActionEvent> operation) {
+        editor.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke(key, modifiers), name);
+        editor.getActionMap().put(name, new AbstractAction() {
+            @Override public void actionPerformed(ActionEvent event) { operation.accept(event); }
         });
     }
 
