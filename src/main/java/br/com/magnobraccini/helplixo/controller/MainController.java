@@ -189,6 +189,15 @@ public final class MainController {
             state.setEditMode(true);
             return;
         }
+        if (!context.getSecurityService().hasEditPassword()) {
+            // Sem senha definida, nenhuma senha seria aceita: avisar em vez de dizer "Senha inválida".
+            String hint = context.getSecurityService().hasMasterPassword()
+                    ? "Defina uma pela engrenagem → Alterar senha (exige a senha mestre)."
+                    : "Peça ao responsável pelo Helplixo para definir a senha de edição.";
+            JOptionPane.showMessageDialog(frame, "Nenhuma senha de edição configurada.\n" + hint,
+                    "Modo de edição", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
         char[] password = new EditPasswordDialog().request(frame);
         if (password == null) {
             return;
@@ -196,7 +205,8 @@ public final class MainController {
         if (context.getSecurityService().validateEditPassword(password)) {
             state.setEditMode(true);
         } else {
-            JOptionPane.showMessageDialog(frame, "Senha inválida.", "Helplixo", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(frame, "Senha incorreta. Confira e tente de novo.", "Helplixo",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -273,6 +283,13 @@ public final class MainController {
     }
 
     private void runChangePassword() {
+        if (!context.getSecurityService().hasMasterPassword()) {
+            JOptionPane.showMessageDialog(frame,
+                    "Nenhuma senha mestre configurada neste computador.\n"
+                            + "Peça ao responsável pelo Helplixo para trocar a senha de edição.",
+                    "Alterar senha", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
         ChangePasswordDialog.Result result = new ChangePasswordDialog().request(frame);
         if (result == null) {
             return;
