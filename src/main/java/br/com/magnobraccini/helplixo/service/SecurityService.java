@@ -22,6 +22,17 @@ public final class SecurityService {
         return true;
     }
 
+    /** Há uma senha de edição definida? Sem ela, nenhuma senha digitada é aceita. */
+    public boolean hasEditPassword() {
+        String configuredPassword = configuration.getEditPassword();
+        return configuredPassword != null && !configuredPassword.isBlank();
+    }
+
+    /** Há uma senha mestre definida (variável HELPLIXO_MASTER_PASSWORD)? */
+    public boolean hasMasterPassword() {
+        return !Constants.MASTER_PASSWORD.isBlank();
+    }
+
     public boolean validateEditPassword(char[] password) {
         if (!requiresPassword()) {
             return true;
