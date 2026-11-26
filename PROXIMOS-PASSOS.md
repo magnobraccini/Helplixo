@@ -35,7 +35,8 @@ A seguir:
 7. ✅ **Senha de edição** conferida no servidor, vinda da variável de ambiente `HELPLIXO_SENHA_EDICAO` (nunca no código nem no Git; sem a variável, o modo edição fica desligado). `POST /api/edicao/entrar` dá uma chave de edição de 8 horas, `POST /api/edicao/sair`, `GET /api/edicao`. As ações de edição vão mandar a chave no cabeçalho `X-Chave-Edicao`. 5 erros seguidos: espera de 1 minuto. 36 testes passando.
 8. ✅ **Inventário (leitura)**: as 14 máquinas da maquete em `dados-teste/maquinas.json`. `GET /api/inventario/resumo`, `GET /api/inventario?q=` (pelo menos 2 letras; Nº Semin exato primeiro; até 20 resultados) e `GET /api/inventario/{nSemin}` (ficha com Office, garantia e histórico de consertos e chamados). 44 testes passando.
 9. ✅ **Inventário (edição)**: `POST /api/inventario` (adicionar), `PUT /api/inventario/{nSemin}` (editar; Nº Semin e patrimônio nunca mudam; o que mudou vai para o histórico), `POST /api/inventario/{nSemin}/movimentacoes`, `POST` e `DELETE /api/inventario/{nSemin}/baixa`. Adicionar, editar e baixa exigem a chave de edição; quem fez vem do cabeçalho `X-Usuario` até existir o login. 55 testes passando. Falta: adicionar software à máquina e a movimentação junto do fechamento do chamado.
-10. Contatos e calendário, nessa ordem.
+10. ✅ **Contatos**: `GET /api/contatos/internos` (filtros secretaria, andar, ordem e busca) e `GET /api/contatos/externos` (categoria, situação do contrato, em ordem de vencimento), com as opções dos filtros tiradas dos próprios contatos. Cadastro com a chave de edição; ramal repetido é aceito e avisa com quem é compartilhado. 62 testes passando.
+11. **Calendário**: marcações com tipos, horários, repetição com fim, lembretes, avisos (qualquer cargo) e feriados, contratos e garantias automáticos.
 
 ## Passo a passo das telas (depois do Node)
 

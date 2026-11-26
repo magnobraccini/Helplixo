@@ -1,0 +1,24 @@
+{
+  "internos": [
+    { "nome": "Andreia Lopes", "setor": "Controle Interno - GABINETE", "andar": "4º", "ramal": "2410", "email": "andreia.lopes@exemplo.gov.br" },
+    { "nome": "Ana Souza", "setor": "Tributação - SEFAZ", "andar": "2º", "ramal": "2214", "email": "ana.souza@exemplo.gov.br" },
+    { "nome": "Bruno Lima", "setor": "Recursos Humanos - SEAD", "andar": "1º", "ramal": "2120", "email": "bruno.lima@exemplo.gov.br" },
+    { "nome": "Carla Mendes", "setor": "Protocolo - SEAD", "andar": "Térreo", "ramal": "2001", "email": "carla.mendes@exemplo.gov.br" },
+    { "nome": "Elaine Prado", "setor": "Gabinete - GABINETE", "andar": "4º", "ramal": "2401", "email": "elaine.prado@exemplo.gov.br" },
+    { "nome": "Fábio Nunes", "setor": "Tributação - SEFAZ", "andar": "2º", "ramal": "2218", "email": "fabio.nunes@exemplo.gov.br" },
+    { "nome": "Paulo Reis", "setor": "Diretoria Obras - SEMOB", "andar": "Anexo", "ramal": "2550", "email": "paulo.reis@exemplo.gov.br" },
+    { "nome": "Renata Dias", "setor": "Informática - SMED", "andar": "3º", "ramal": "2320", "email": "renata.dias@exemplo.gov.br" },
+    { "nome": "Diego Rocha", "setor": "Informática - SMED", "andar": "3º", "ramal": "2310", "email": "diego.rocha@exemplo.gov.br" },
+    { "nome": "Magno", "setor": "Informática - SMED", "andar": "3º", "ramal": "2312", "email": "magno@exemplo.gov.br" },
+    { "nome": "Rafael Torres", "setor": "Informática - SMED", "andar": "3º", "ramal": "2300", "email": "rafael.torres@exemplo.gov.br" },
+    { "nome": "Lúcia Ramos", "setor": "Informática - SMED", "andar": "3º", "ramal": "2305", "email": "lucia.ramos@exemplo.gov.br" }
+  ],
+  "externos": [
+    { "categoria": "Impressão", "empresa": "Printer Center Locações", "servico": "Impressoras alugadas", "contato": "Suporte técnico", "telefone": "(11) 4002-1234", "email": "suporte@printercenter.exemplo", "contrato": "045/2025", "vence": "2026-12-15" },
+    { "categoria": "Internet e telefonia", "empresa": "TelecomNet", "servico": "Link de internet", "contato": "NOC 24 horas", "telefone": "0800 555 0101", "email": "noc@telecomnet.exemplo", "contrato": "012/2024", "vence": "2027-06-30" },
+    { "categoria": "Sistemas", "empresa": "SoftGov Sistemas", "servico": "Sistema de protocolo", "contato": "Atendimento", "telefone": "(11) 3333-2000", "email": "chamados@softgov.exemplo", "contrato": "078/2023", "vence": "2026-11-10" },
+    { "categoria": "Sistemas", "empresa": "Certifica Brasil", "servico": "Certificado digital", "contato": "Comercial", "telefone": "(11) 3555-7788", "email": "atendimento@certifica.exemplo", "contrato": "101/2026", "vence": "2027-03-01" },
+    { "categoria": "Equipamentos", "empresa": "Fonte Distribuidora", "servico": "Peças e periféricos", "contato": "Vendas", "telefone": "(11) 3777-4100", "email": "vendas@fonte.exemplo", "contrato": "033/2026", "vence": "2027-01-20" },
+    { "categoria": "Internet e telefonia", "empresa": "FalaBem Telefonia", "servico": "Central telefônica", "contato": "Suporte", "telefone": "(11) 3888-9000", "email": "suporte@falabem.exemplo", "contrato": "067/2025", "vence": "2026-12-20" }
+  ]
+}
