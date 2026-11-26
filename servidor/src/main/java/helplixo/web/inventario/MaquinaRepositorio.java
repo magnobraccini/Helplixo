@@ -35,4 +35,35 @@ public class MaquinaRepositorio {
     public Optional<Maquina> porNSemin(String nSemin) {
         return maquinas.stream().filter(m -> m.nSemin().equalsIgnoreCase(nSemin.trim())).findFirst();
     }
+
+    public Optional<Maquina> porPatrimonio(String patrimonio) {
+        return maquinas.stream().filter(m -> m.patrimonio() != null && m.patrimonio().equalsIgnoreCase(patrimonio.trim())).findFirst();
+    }
+
+    /** Guarda a máquina: troca a que tem o mesmo Nº Semin, ou acrescenta se for nova. */
+    public synchronized void salvar(Maquina maquina) {
+        boolean existia = maquinas.stream().anyMatch(m -> m.nSemin().equals(maquina.nSemin()));
+        if (existia) maquinas.replaceAll(m -> m.nSemin().equals(maquina.nSemin()) ? maquina : m);
+        else maquinas.add(maquina);
+    }
+
+    // movimentações e alterações de cadastro (no sistema real, tabelas do banco)
+    private final List<Movimentacao> movimentacoes = new CopyOnWriteArrayList<>();
+    private final List<RegistroCadastro> registros = new CopyOnWriteArrayList<>();
+
+    public void registrar(Movimentacao m) {
+        movimentacoes.add(m);
+    }
+
+    public void registrar(RegistroCadastro r) {
+        registros.add(r);
+    }
+
+    public List<Movimentacao> movimentacoesDe(String nSemin) {
+        return movimentacoes.stream().filter(m -> m.nSemin().equalsIgnoreCase(nSemin)).toList();
+    }
+
+    public List<RegistroCadastro> registrosDe(String nSemin) {
+        return registros.stream().filter(r -> r.nSemin().equalsIgnoreCase(nSemin)).toList();
+    }
 }

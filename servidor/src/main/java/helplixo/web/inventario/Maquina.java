@@ -26,13 +26,33 @@ public record Maquina(
         Compra compra,
         List<Software> softwares,
         List<SistemaPmsl> sistemasPmsl,
-        List<Conserto> consertos) {
+        List<Conserto> consertos,
+        Baixa baixa) {
 
     public Maquina {
         softwares = softwares == null ? List.of() : List.copyOf(softwares);
         sistemasPmsl = sistemasPmsl == null ? List.of() : List.copyOf(sistemasPmsl);
         consertos = consertos == null ? List.of() : List.copyOf(consertos);
     }
+
+    public boolean baixada() {
+        return baixa != null;
+    }
+
+    /** Cópia com outro local e situação (movimentação). */
+    Maquina noLocal(String novoLocal, String novaSituacao) {
+        return new Maquina(nSemin, patrimonio, tipo, modelo, serie, processador, memoria, armazenamento, sistema, ip, mac,
+                novoLocal, usuario, novaSituacao, observacao, compra, softwares, sistemasPmsl, consertos, baixa);
+    }
+
+    /** Cópia com a baixa registrada (ou desfeita, com null) e a situação ajustada. */
+    Maquina comBaixa(Baixa novaBaixa, String novaSituacao) {
+        return new Maquina(nSemin, patrimonio, tipo, modelo, serie, processador, memoria, armazenamento, sistema, ip, mac,
+                local, usuario, novaSituacao, observacao, compra, softwares, sistemasPmsl, consertos, novaBaixa);
+    }
+
+    /** Baixa: motivo (Descarte, Doação, Leilão, Furto ou perda, Outro), observação, dia e quem fez. */
+    public record Baixa(String motivo, String observacao, LocalDate dia, String quem) {}
 
     /** Computador e notebook têm softwares; impressora, monitor, telefone e nobreak não. */
     public boolean ehComputador() {

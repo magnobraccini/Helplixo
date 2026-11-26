@@ -2,6 +2,14 @@ package helplixo.web.inventario;
 
 import helplixo.web.RegraVioladaException;
 import helplixo.web.chamado.ChamadoRepositorio;
+import helplixo.web.edicao.EdicaoController;
+import helplixo.web.edicao.EdicaoServico;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import java.text.Normalizer;
 import java.time.Clock;
 import java.time.LocalDate;
@@ -36,14 +44,69 @@ public class InventarioController {
     private static final Pattern OFFICE = Pattern.compile("office|microsoft 365", Pattern.CASE_INSENSITIVE);
     private static final DateTimeFormatter DIA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
+    /** Quem fez a alteração. Até existir o login, a tela manda o nome neste cabeçalho. */
+    public static final String CABECALHO_USUARIO = "X-Usuario";
+
     private final MaquinaRepositorio maquinas;
     private final ChamadoRepositorio chamados;
+    private final InventarioServico servico;
+    private final EdicaoServico edicao;
     private final Clock relogio;
 
-    public InventarioController(MaquinaRepositorio maquinas, ChamadoRepositorio chamados, Clock relogio) {
+    public InventarioController(MaquinaRepositorio maquinas, ChamadoRepositorio chamados, InventarioServico servico,
+                                EdicaoServico edicao, Clock relogio) {
         this.maquinas = maquinas;
         this.chamados = chamados;
+        this.servico = servico;
+        this.edicao = edicao;
         this.relogio = relogio;
+    }
+
+    // ---------- edição (modo edição: cabeçalho X-Chave-Edicao) ----------
+
+    /** Adicionar máquina. Resposta 201 com a máquina criada. */
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public Maquina adicionar(@RequestBody InventarioServico.DadosMaquina dados,
+                             @RequestHeader(value = EdicaoController.CABECALHO, required = false) String chave,
+                             @RequestHeader(value = CABECALHO_USUARIO, required = false) String usuario) {
+        edicao.exigir(chave);
+        return servico.adicionar(dados, quem(usuario));
+    }
+
+    /** Editar máquina. Nº Semin e patrimônio não mudam. */
+    @PutMapping("/{nSemin}")
+    public InventarioServico.ResultadoEdicao editar(@PathVariable String nSemin, @RequestBody InventarioServico.DadosMaquina dados,
+                                                    @RequestHeader(value = EdicaoController.CABECALHO, required = false) String chave,
+                                                    @RequestHeader(value = CABECALHO_USUARIO, required = false) String usuario) {
+        edicao.exigir(chave);
+        return servico.editar(nSemin, dados, quem(usuario));
+    }
+
+    /** Movimentação: a máquina vai para outro lugar. Não precisa do modo edição (é trabalho do técnico). */
+    @PostMapping("/{nSemin}/movimentacoes")
+    public Maquina movimentar(@PathVariable String nSemin, @RequestBody InventarioServico.PedidoMovimentacao pedido) {
+        return servico.movimentar(nSemin, pedido);
+    }
+
+    @PostMapping("/{nSemin}/baixa")
+    public Maquina darBaixa(@PathVariable String nSemin, @RequestBody InventarioServico.PedidoBaixa pedido,
+                            @RequestHeader(value = EdicaoController.CABECALHO, required = false) String chave,
+                            @RequestHeader(value = CABECALHO_USUARIO, required = false) String usuario) {
+        edicao.exigir(chave);
+        return servico.darBaixa(nSemin, pedido, quem(usuario));
+    }
+
+    @DeleteMapping("/{nSemin}/baixa")
+    public Maquina desfazerBaixa(@PathVariable String nSemin,
+                                 @RequestHeader(value = EdicaoController.CABECALHO, required = false) String chave,
+                                 @RequestHeader(value = CABECALHO_USUARIO, required = false) String usuario) {
+        edicao.exigir(chave);
+        return servico.desfazerBaixa(nSemin, quem(usuario));
+    }
+
+    private static String quem(String usuario) {
+        return usuario == null || usuario.isBlank() ? "não identificado" : usuario.trim();
     }
 
     /** Situação do pacote Office: sim, sim (sem licença), não, não informado ou não se aplica. */
@@ -56,8 +119,8 @@ public class InventarioController {
 
     public record Busca(List<ItemMaquina> maquinas, int total, boolean temMais) {}
 
-    /** Uma linha do histórico: Conserto ou Chamado, do mais novo para o mais antigo. */
-    public record ItemHistorico(LocalDate data, String tipo, String texto, String referencia) {}
+    /** Uma linha do histórico (Conserto, Chamado, Movimentação, Cadastro ou Baixa), do mais novo para o mais antigo. */
+    public record ItemHistorico(LocalDateTime quando, String tipo, String texto, String referencia, String quem) {}
 
     public record Ficha(Maquina maquina, Office office, Garantia garantia, List<ItemHistorico> historico) {}
 
@@ -89,10 +152,16 @@ public class InventarioController {
         Maquina m = maquinas.porNSemin(nSemin)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Máquina " + nSemin + " não está no inventário."));
         List<ItemHistorico> historico = new ArrayList<>();
-        m.consertos().forEach(c -> historico.add(new ItemHistorico(c.data(), "Conserto", c.defeito() + " → " + c.solucao() + " (" + c.onde() + ")", null)));
-        chamados.daMaquina(m.nSemin()).forEach(c -> historico.add(new ItemHistorico(c.abertoEm().toLocalDate(), "Chamado",
-                c.problema() + " (" + c.status().rotulo().toLowerCase() + ")", c.numero())));
-        historico.sort(Comparator.comparing(ItemHistorico::data).reversed());
+        m.consertos().forEach(c -> historico.add(new ItemHistorico(c.data().atStartOfDay(), "Conserto",
+                c.defeito() + " → " + c.solucao() + " (" + c.onde() + ")", null, null)));
+        chamados.daMaquina(m.nSemin()).forEach(c -> historico.add(new ItemHistorico(c.abertoEm(), "Chamado",
+                c.problema() + " (" + c.status().rotulo().toLowerCase() + ")", c.numero(), c.tecnico())));
+        maquinas.movimentacoesDe(m.nSemin()).forEach(v -> historico.add(new ItemHistorico(v.quando(), "Movimentação",
+                v.de() + " → " + v.para() + ": " + v.motivo(), v.chamado().isEmpty() ? null : v.chamado(), v.tecnico())));
+        maquinas.registrosDe(m.nSemin()).forEach(r -> historico.add(new ItemHistorico(r.quando(), r.tipo(), r.texto(), null, r.quem())));
+        // do mais novo para o mais antigo; no mesmo instante, o último registrado vem primeiro
+        java.util.Collections.reverse(historico);
+        historico.sort(Comparator.comparing(ItemHistorico::quando).reversed());
         return new Ficha(m, office(m), garantia(m), historico);
     }
 
