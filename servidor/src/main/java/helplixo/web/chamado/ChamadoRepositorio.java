@@ -47,4 +47,9 @@ public class ChamadoRepositorio {
     public Optional<Chamado> porNumero(String numero) {
         return chamados.stream().filter(c -> c.numero().equals(numero)).findFirst();
     }
+
+    /** Troca o chamado guardado pela versão nova (mesmo número). */
+    public void salvar(Chamado atualizado) {
+        chamados.replaceAll(c -> c.numero().equals(atualizado.numero()) ? atualizado : c);
+    }
 }

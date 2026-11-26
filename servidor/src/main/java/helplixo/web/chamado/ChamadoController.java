@@ -2,12 +2,13 @@ package helplixo.web.chamado;
 
 import java.time.Clock;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -23,10 +24,12 @@ import org.springframework.web.server.ResponseStatusException;
 public class ChamadoController {
 
     private final ChamadoRepositorio repositorio;
+    private final ChamadoServico servico;
     private final Clock relogio;
 
-    public ChamadoController(ChamadoRepositorio repositorio, Clock relogio) {
+    public ChamadoController(ChamadoRepositorio repositorio, ChamadoServico servico, Clock relogio) {
         this.repositorio = repositorio;
+        this.servico = servico;
         this.relogio = relogio;
     }
 
@@ -55,5 +58,15 @@ public class ChamadoController {
     public Chamado detalhe(@PathVariable String numero) {
         return repositorio.porNumero(numero)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Chamado " + numero + " não encontrado."));
+    }
+
+    /**
+     * O formulário único da aba Resultado: atualiza, fecha ou reabre conforme o status escolhido.
+     * Corpo: {"status": "Fechado", "anotacao": "...", "quando": "2026-11-26T10:30", "tecnico": "Magno"}
+     * Erro de regra: 422 com {"erros": [...]}.
+     */
+    @PostMapping("/{numero}/resultado")
+    public ChamadoServico.Resultado registrarResultado(@PathVariable String numero, @RequestBody ChamadoServico.PedidoResultado pedido) {
+        return servico.registrar(detalhe(numero), pedido);
     }
 }

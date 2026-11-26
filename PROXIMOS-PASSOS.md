@@ -16,7 +16,7 @@ Pausa em 25/11/2026. Este arquivo diz onde paramos e o que fazer ao voltar.
 
 1. Instalar o **Node.js LTS** pelo site oficial (nodejs.org). Depois, conferir num terminal novo:
    `node -v` e `npm -v`.
-2. Confirmar se o Maven baixa dependências pela rede da prefeitura (a inspeção SSL já atrapalhou o Git).
+2. ✅ O Maven baixa dependências pela rede da prefeitura sem problema.
 
 ## Passo a passo do servidor
 
@@ -27,9 +27,10 @@ Feito em 26/11/2026 (ainda sem commit):
 3. ✅ **API de chamados**: `GET /api/chamados?de=&ate=&status=` (sem datas = últimos 30 dias, filtro no servidor), `GET /api/chamados/{n}`, `GET /api/saude`.
 4. ✅ **Testes**: 8 testes passando (`mvn test` na pasta `servidor`).
 
+5. ✅ **Atualizar chamado**: `POST /api/chamados/{n}/resultado` com o formulário único (status, anotação, data e hora, técnico). Anotação obrigatória só para fechar; reabrir guarda o fechamento anterior no andamento; fora do expediente só avisa. Erros de regra voltam como 422 `{"erros": [...]}`. 18 testes passando. Falta: movimentação de equipamento junto do fechamento e a permissão por perfil (depois do login).
+
 A seguir:
 
-5. **Atualizar chamado** (um formulário só, com status Aberto / Em andamento / Fechado), com as mesmas validações da maquete.
 6. **Processos**: ler `folders.json` e `processes/*.json` no formato do Helplixo atual (cópia de teste em `C:\Users\magnoC.dgi\Projetos\helplixo-dados-teste`, nunca a pasta da rede).
 7. **Senha de edição** conferida no servidor, vinda da variável de ambiente `HELPLIXO_SENHA_EDICAO` (nunca no Git).
 8. Inventário, contatos e calendário, nessa ordem.
