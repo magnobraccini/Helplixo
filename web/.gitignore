@@ -1,0 +1,18 @@
+# compilação
+servidor/target/
+telas/node_modules/
+telas/dist/
+
+# senhas e configurações locais: nunca vão para o Git
+.env
+.env.*
+*.local.properties
+application-local.properties
+segredos/
+
+# editores e sistema
+.idea/
+.vscode/
+*.iml
+Thumbs.db
+desktop.ini

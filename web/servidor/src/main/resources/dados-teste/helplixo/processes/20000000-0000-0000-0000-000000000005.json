@@ -1,0 +1,14 @@
+{
+  "id": "20000000-0000-0000-0000-000000000005",
+  "folderId": "10000000-0000-0000-0000-000000000008",
+  "title": "Desbloquear usuário no AD",
+  "description": "Liberar a conta de quem errou a senha várias vezes.",
+  "objective": "", "prerequisites": "", "responsible": "Sistemas",
+  "createdAt": "2026-10-05T09:00:00", "updatedAt": "2026-11-25T08:00:00",
+  "category": "Contas", "tags": ["senha", "ad"], "steps": [], "stepsHtml": "",
+  "content": [
+    { "id": "30000000-0000-0000-0000-000000000041", "type": "NUMBERED_LIST", "text": "Abra Usuários e Computadores do AD.\nProcure o usuário › Propriedades › Conta.\nMarque Desbloquear conta.", "url": null, "bold": false, "italic": false, "underline": false },
+    { "id": "30000000-0000-0000-0000-000000000042", "type": "INFO", "text": "Se bloquear de novo logo depois, procure um celular ou computador com a senha antiga salva.", "url": null, "bold": false, "italic": false, "underline": false }
+  ],
+  "observations": "", "links": [], "archived": false, "deleted": false, "customIcon": "document"
+}
