@@ -39,7 +39,7 @@ Vamos continuar o **Helplixo Web**, a versão web do sistema de suporte da TI da
 ## Parte 1: levar o Helplixo Web para o GitHub (no computador do Magno)
 
 **Situação de hoje**
-- O Helplixo Web está num repositório Git **só local**, sem remoto: `C:\Users\magnoC.dgi\Projetos\Helplixo-Web`, branch `main`, 9 commits (o último é o deste prompt).
+- O Helplixo Web está num repositório Git **só local**, sem remoto: `C:\Users\magnoC.dgi\Projetos\Helplixo-Web`, branch `main`, com todo o histórico do projeto (o último commit é o deste prompt).
 - O repositório do GitHub **`https://github.com/magnobraccini/Helplixo`** é o do programa atual (Swing). A branch principal é `master`, e o clone local fica em `C:\Users\magnoC.dgi\Projetos\Helplixo`.
 - O Git desta máquina usa `http.sslBackend=schannel` por causa da inspeção SSL da rede da prefeitura.
 
