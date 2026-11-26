@@ -33,7 +33,9 @@ A seguir:
 
 6. ✅ **Processos** (só leitura): lê `folders.json` e `processes/*.json` no formato do Helplixo atual. `GET /api/processos/arvore`, `GET /api/processos/{id}` (com o caminho de pastas) e `GET /api/processos?q=` (ignora acentos). Amostra em `src/main/resources/dados-teste/helplixo`; para ler a cópia de teste, mudar `helplixo.dados.processos` no `application.properties` (nunca a pasta da rede). 27 testes passando. Falta: criar e editar processos, anexos e processos parecidos.
 7. ✅ **Senha de edição** conferida no servidor, vinda da variável de ambiente `HELPLIXO_SENHA_EDICAO` (nunca no código nem no Git; sem a variável, o modo edição fica desligado). `POST /api/edicao/entrar` dá uma chave de edição de 8 horas, `POST /api/edicao/sair`, `GET /api/edicao`. As ações de edição vão mandar a chave no cabeçalho `X-Chave-Edicao`. 5 erros seguidos: espera de 1 minuto. 36 testes passando.
-8. Inventário, contatos e calendário, nessa ordem.
+8. ✅ **Inventário (leitura)**: as 14 máquinas da maquete em `dados-teste/maquinas.json`. `GET /api/inventario/resumo`, `GET /api/inventario?q=` (pelo menos 2 letras; Nº Semin exato primeiro; até 20 resultados) e `GET /api/inventario/{nSemin}` (ficha com Office, garantia e histórico de consertos e chamados). 44 testes passando.
+9. **Inventário (edição)**: adicionar e editar máquina com a chave de edição (Nº Semin e patrimônio nunca mudam, edição vai para o histórico), movimentação e baixa.
+10. Contatos e calendário, nessa ordem.
 
 ## Passo a passo das telas (depois do Node)
 

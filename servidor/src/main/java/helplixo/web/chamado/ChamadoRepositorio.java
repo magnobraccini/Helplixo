@@ -48,6 +48,14 @@ public class ChamadoRepositorio {
         return chamados.stream().filter(c -> c.numero().equals(numero)).findFirst();
     }
 
+    /** Todos os chamados de uma máquina, do mais novo para o mais antigo. */
+    public List<Chamado> daMaquina(String nSemin) {
+        return chamados.stream()
+                .filter(c -> c.nSemin() != null && c.nSemin().equalsIgnoreCase(nSemin))
+                .sorted(Comparator.comparing(Chamado::abertoEm).reversed())
+                .toList();
+    }
+
     /** Troca o chamado guardado pela versão nova (mesmo número). */
     public void salvar(Chamado atualizado) {
         chamados.replaceAll(c -> c.numero().equals(atualizado.numero()) ? atualizado : c);
