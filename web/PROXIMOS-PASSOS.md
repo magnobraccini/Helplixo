@@ -45,7 +45,12 @@ Pendências do servidor (pequenas): adicionar software à máquina; movimentaç�
 ## Passo a passo das telas (depois do Node)
 
 1. ✅ Criar `telas/` com React + TypeScript (Vite 8, React 19, TypeScript 7). Proxy de `/api` para `http://localhost:8080` (conferido com o servidor no ar). Testes com Vitest + Testing Library + jsdom: 2 testes passando (`npm test` na pasta `telas`). Cópias da maquete v32 e das regras em `docs/` (sem a senha de teste da maquete).
-2. Tema claro creme e escuro estilo Notion, com as mesmas variáveis de cor da maquete.
+2. ✅ **Tema e estrutura** (26/11/2026):
+   - Tokens `--c-...` copiados das linhas 14 e 15 da maquete (`telas/src/estilos/tokens.css`). Um teste confere que continuam idênticos.
+   - Menu lateral com emojis, capa ilustrada por aba (gerada a partir do SVG da maquete em `CenasCapa.tsx`, sem balão de fala; no escuro usa a paleta noturna), topo com caminho, `Você: <perfil>` e sino.
+   - Configurações: tema Claro/Escuro/Sistema (salvo em `localStorage`, chave `helplixo-tema`) e interruptor do Modo Edição. A senha vai para `POST /api/edicao/entrar`; a tela guarda só a chave de 8 horas (`sessionStorage`), confere a chave ao abrir e desliga sozinha quando ela vence.
+   - 13 testes passando (`npm test`).
+   - Provisório: o perfil é fixo em "Triagem" até existir o login; o sino ainda não tem notificações (entram com Chamados e Calendário); a busca única (Ctrl K) e o número de abertos ao lado de "Chamados" ficam para as telas que os alimentam.
 3. Tela de Chamados ligada à API, depois as outras abas na ordem do servidor.
 
 ## Regras que continuam valendo

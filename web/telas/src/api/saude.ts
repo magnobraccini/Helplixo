@@ -1,3 +1,5 @@
+import { pedir } from './cliente'
+
 /** Resposta de GET /api/saude (ver web/servidor/.../SaudeController.java). */
 export type Saude = {
   status: string
@@ -5,10 +7,6 @@ export type Saude = {
   agora: string
 }
 
-export async function buscarSaude(): Promise<Saude> {
-  const resposta = await fetch('/api/saude')
-  if (!resposta.ok) {
-    throw new Error(`Servidor respondeu ${resposta.status}`)
-  }
-  return (await resposta.json()) as Saude
+export function buscarSaude(): Promise<Saude> {
+  return pedir<Saude>('/api/saude')
 }

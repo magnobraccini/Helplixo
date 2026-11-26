@@ -1,0 +1,10 @@
+{
+  // Tipos só para os testes: além do navegador (DOM), conhecem o Node (ler arquivos) e o Vitest.
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.test.tsbuildinfo",
+    "types": ["vite/client", "node", "vitest/globals"]
+  },
+  "include": ["src"],
+  "exclude": []
+}
