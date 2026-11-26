@@ -1,0 +1,11 @@
+[
+  { "id": "av1", "titulo": "Sistema de protocolo fora do ar", "tipo": "Aviso", "inicio": "2026-11-26", "lembrete": "dia", "descricao": "Instabilidade no servidor de protocolo desde as 8h. Registre os atendimentos e avise quando voltar.", "autor": "Rafael", "cargo": "Chefe de TI", "urgente": true },
+  { "id": "av2", "titulo": "Atualização das estações da Tributação (após o expediente)", "tipo": "Aviso", "inicio": "2026-11-27", "horaInicio": "14:30", "descricao": "As máquinas serão reiniciadas depois das 14h.", "autor": "Magno", "cargo": "Técnico" },
+  { "id": "av3", "titulo": "Portal do servidor: login igual ao da rede", "tipo": "Aviso", "inicio": "2026-11-18", "descricao": "Oriente quem ligar com dúvida.", "autor": "Lúcia", "cargo": "Triagem" },
+  { "id": "m1", "titulo": "Troca do switch do 3º andar", "tipo": "Manutenção", "inicio": "2026-11-26", "horaInicio": "12:00", "horaFim": "13:00", "lembrete": "1440", "descricao": "A rede do 3º andar ficará indisponível." },
+  { "id": "m2", "titulo": "Reunião da equipe de TI", "tipo": "Reunião", "inicio": "2026-11-02", "horaInicio": "09:00", "horaFim": "10:00", "repete": "semanal", "lembrete": "30", "descricao": "Pauta: chamados parados, compras e escala do mês." },
+  { "id": "m3", "titulo": "Conferir backup do servidor", "tipo": "Manutenção", "inicio": "2026-01-05", "horaInicio": "13:00", "horaFim": "13:30", "repete": "mensal" },
+  { "id": "m4", "titulo": "Lúcia em curso", "tipo": "Ausência", "inicio": "2026-11-27", "horaInicio": "08:00", "horaFim": "12:00" },
+  { "id": "m5", "titulo": "Férias do Rafael", "tipo": "Ausência", "inicio": "2026-12-01", "fim": "2026-12-15" },
+  { "id": "m6", "titulo": "Aniversário da Lúcia", "tipo": "Aniversário", "inicio": "1996-11-26", "repete": "anual" }
+]
