@@ -2,6 +2,8 @@
 
 Pausa em 25/11/2026. Este arquivo diz onde paramos e o que fazer ao voltar.
 
+> **Onde o projeto mora agora (26/11/2026):** na pasta `web/` do repositório `magnobraccini/Helplixo`, branch `helplixo-web`, com todo o histórico trazido por `git subtree`. O código Swing do Helplixo atual continua fora de `web/`, sem mudanças. O repositório local `C:\Users\magnoC.dgi\Projetos\Helplixo-Web` ficou só como cópia de segurança. Os caminhos citados abaixo (como `servidor/`) são relativos a `web/`.
+
 ## Onde paramos
 
 - A maquete está aprovada e publicada (v32): https://claude.ai/artifact/YKUfPne25G3Kt8vu67gsUd
