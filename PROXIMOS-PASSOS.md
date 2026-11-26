@@ -32,7 +32,7 @@ Feito em 26/11/2026 (ainda sem commit):
 A seguir:
 
 6. ✅ **Processos** (só leitura): lê `folders.json` e `processes/*.json` no formato do Helplixo atual. `GET /api/processos/arvore`, `GET /api/processos/{id}` (com o caminho de pastas) e `GET /api/processos?q=` (ignora acentos). Amostra em `src/main/resources/dados-teste/helplixo`; para ler a cópia de teste, mudar `helplixo.dados.processos` no `application.properties` (nunca a pasta da rede). 27 testes passando. Falta: criar e editar processos, anexos e processos parecidos.
-7. **Senha de edição** conferida no servidor, vinda da variável de ambiente `HELPLIXO_SENHA_EDICAO` (nunca no Git).
+7. ✅ **Senha de edição** conferida no servidor, vinda da variável de ambiente `HELPLIXO_SENHA_EDICAO` (nunca no código nem no Git; sem a variável, o modo edição fica desligado). `POST /api/edicao/entrar` dá uma chave de edição de 8 horas, `POST /api/edicao/sair`, `GET /api/edicao`. As ações de edição vão mandar a chave no cabeçalho `X-Chave-Edicao`. 5 erros seguidos: espera de 1 minuto. 36 testes passando.
 8. Inventário, contatos e calendário, nessa ordem.
 
 ## Passo a passo das telas (depois do Node)
