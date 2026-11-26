@@ -31,7 +31,7 @@ Feito em 26/11/2026 (ainda sem commit):
 
 A seguir:
 
-6. **Processos**: ler `folders.json` e `processes/*.json` no formato do Helplixo atual (cópia de teste em `C:\Users\magnoC.dgi\Projetos\helplixo-dados-teste`, nunca a pasta da rede).
+6. ✅ **Processos** (só leitura): lê `folders.json` e `processes/*.json` no formato do Helplixo atual. `GET /api/processos/arvore`, `GET /api/processos/{id}` (com o caminho de pastas) e `GET /api/processos?q=` (ignora acentos). Amostra em `src/main/resources/dados-teste/helplixo`; para ler a cópia de teste, mudar `helplixo.dados.processos` no `application.properties` (nunca a pasta da rede). 27 testes passando. Falta: criar e editar processos, anexos e processos parecidos.
 7. **Senha de edição** conferida no servidor, vinda da variável de ambiente `HELPLIXO_SENHA_EDICAO` (nunca no Git).
 8. Inventário, contatos e calendário, nessa ordem.
 

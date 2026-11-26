@@ -1,0 +1,10 @@
+{
+  "id": "20000000-0000-0000-0000-000000000006",
+  "folderId": "10000000-0000-0000-0000-000000000008",
+  "title": "Resetar senha do Windows XP",
+  "description": "Arquivado: não deve aparecer na árvore nem na busca.",
+  "objective": "", "prerequisites": "", "responsible": "Sistemas",
+  "createdAt": "2020-01-01T09:00:00", "updatedAt": "2021-01-01T09:00:00",
+  "category": "Contas", "tags": ["senha"], "steps": [], "stepsHtml": "", "content": [],
+  "observations": "", "links": [], "archived": true, "deleted": false, "customIcon": "document"
+}

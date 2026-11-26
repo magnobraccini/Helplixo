@@ -1,0 +1,29 @@
+{
+  "id": "20000000-0000-0000-0000-000000000001",
+  "folderId": "10000000-0000-0000-0000-000000000005",
+  "title": "Configurar impressora de rede",
+  "description": "Instalar uma impressora compartilhada no computador do usuário, pelo endereço IP.",
+  "objective": "Usuário imprimindo na impressora do andar.",
+  "prerequisites": "Saber o andar e o nome da impressora.",
+  "responsible": "Sup. Técnico",
+  "createdAt": "2026-10-02T09:00:00",
+  "updatedAt": "2026-11-25T16:40:00",
+  "category": "Impressoras",
+  "tags": ["impressora", "rede"],
+  "steps": [],
+  "stepsHtml": "",
+  "content": [
+    { "id": "30000000-0000-0000-0000-000000000001", "type": "HEADING", "text": "1. Antes de começar", "url": null, "bold": false, "italic": false, "underline": false },
+    { "id": "30000000-0000-0000-0000-000000000002", "type": "PARAGRAPH", "text": "Confirme com o usuário o andar e o nome da impressora (etiqueta na frente do equipamento).", "url": null, "bold": false, "italic": false, "underline": false },
+    { "id": "30000000-0000-0000-0000-000000000003", "type": "HEADING", "text": "2. Adicionar pelo IP", "url": null, "bold": false, "italic": false, "underline": false },
+    { "id": "30000000-0000-0000-0000-000000000004", "type": "NUMBERED_LIST", "text": "Abra Configurações › Impressoras e scanners.\nClique em Adicionar dispositivo › A impressora que eu quero não está na lista.\nEscolha Adicionar por endereço TCP/IP e digite o IP da etiqueta (ex.: 10.0.12.40).\nImprima uma página de teste.", "url": null, "bold": false, "italic": false, "underline": false },
+    { "id": "30000000-0000-0000-0000-000000000005", "type": "IMAGE", "text": "Tela \"Adicionar uma impressora\" com a opção TCP/IP marcada", "url": "anexos/adicionar-impressora.png", "bold": false, "italic": false, "underline": false },
+    { "id": "30000000-0000-0000-0000-000000000006", "type": "WARNING", "text": "Se o driver não aparecer, use o instalador da pasta de drivers da rede.", "url": null, "bold": false, "italic": false, "underline": false },
+    { "id": "30000000-0000-0000-0000-000000000007", "type": "LINK", "text": "Suporte HP: drivers por modelo", "url": "https://support.hp.com", "bold": false, "italic": false, "underline": false }
+  ],
+  "observations": "",
+  "links": ["\\\\servidor\\ti\\drivers\\HP"],
+  "archived": false,
+  "deleted": false,
+  "customIcon": "document"
+}

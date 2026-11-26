@@ -1,0 +1,17 @@
+{
+  "id": "20000000-0000-0000-0000-000000000004",
+  "folderId": "10000000-0000-0000-0000-000000000002",
+  "title": "Mapear unidade G:",
+  "description": "Ligar a pasta compartilhada do setor como unidade G:.",
+  "objective": "", "prerequisites": "Usuário no grupo da pasta no AD.", "responsible": "Redes",
+  "createdAt": "2026-10-04T09:00:00", "updatedAt": "2026-11-23T09:30:00",
+  "category": "Rede", "tags": ["pasta", "rede"],
+  "steps": [
+    { "id": "40000000-0000-0000-0000-000000000001", "number": 1, "title": "Conferir o acesso", "description": "Veja no AD se o usuário está no grupo da pasta do setor (ex.: GRP_RH).", "expectedResult": "Usuário no grupo.", "checklist": [] },
+    { "id": "40000000-0000-0000-0000-000000000002", "number": 2, "title": "Mapear", "description": "Explorador de Arquivos › Este Computador › Mapear unidade de rede, letra G:.", "expectedResult": "Unidade G: aparece ao entrar.", "checklist": ["Marcar Reconectar ao entrar"] }
+  ],
+  "stepsHtml": "", "content": [
+    { "id": "30000000-0000-0000-0000-000000000031", "type": "NOTE", "text": "Se aparecer \"acesso negado\", o problema é o grupo no AD, não o mapeamento.", "url": null, "bold": false, "italic": false, "underline": false }
+  ],
+  "observations": "", "links": [], "archived": false, "deleted": false, "customIcon": "document"
+}
