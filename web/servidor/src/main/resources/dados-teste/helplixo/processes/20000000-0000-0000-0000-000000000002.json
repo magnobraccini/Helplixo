@@ -1,0 +1,13 @@
+{
+  "id": "20000000-0000-0000-0000-000000000002",
+  "folderId": "10000000-0000-0000-0000-000000000004",
+  "title": "Limpar fila de impressão",
+  "description": "Destravar impressões presas na fila.",
+  "objective": "", "prerequisites": "", "responsible": "Sup. Técnico",
+  "createdAt": "2026-10-02T09:00:00", "updatedAt": "2026-11-10T11:00:00",
+  "category": "Impressoras", "tags": ["impressora"], "steps": [], "stepsHtml": "",
+  "content": [
+    { "id": "30000000-0000-0000-0000-000000000011", "type": "NUMBERED_LIST", "text": "Abra services.msc.\nPare o serviço Spooler de Impressão.\nApague os arquivos de C:\\Windows\\System32\\spool\\PRINTERS.\nInicie o Spooler de novo e mande uma página de teste.", "url": null, "bold": false, "italic": false, "underline": false }
+  ],
+  "observations": "", "links": [], "archived": false, "deleted": false, "customIcon": "document"
+}

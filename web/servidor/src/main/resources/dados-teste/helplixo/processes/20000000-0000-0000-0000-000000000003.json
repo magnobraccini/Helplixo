@@ -1,0 +1,16 @@
+{
+  "id": "20000000-0000-0000-0000-000000000003",
+  "folderId": "10000000-0000-0000-0000-000000000007",
+  "title": "Configurar SIGEM para abrir PDF e XLS",
+  "description": "Fazer o SIGEM abrir anexos PDF e planilhas XLS.",
+  "objective": "", "prerequisites": "", "responsible": "Sistemas",
+  "createdAt": "2026-10-03T09:00:00", "updatedAt": "2026-11-05T14:00:00",
+  "category": "Sistemas", "tags": ["sigem", "folha"], "steps": [], "stepsHtml": "",
+  "content": [
+    { "id": "30000000-0000-0000-0000-000000000021", "type": "HEADING", "text": "1. Programas padrão", "url": null, "bold": false, "italic": false, "underline": false },
+    { "id": "30000000-0000-0000-0000-000000000022", "type": "BULLET_LIST", "text": "Confira se há leitor de PDF e planilha instalados.\nDefina os dois como padrão para .pdf e .xls.", "url": null, "bold": false, "italic": false, "underline": false },
+    { "id": "30000000-0000-0000-0000-000000000023", "type": "HEADING", "text": "2. No SIGEM", "url": null, "bold": false, "italic": false, "underline": false },
+    { "id": "30000000-0000-0000-0000-000000000024", "type": "NUMBERED_LIST", "text": "Abra Configurações › Visualizadores.\nAponte PDF e XLS para os programas padrão.\nTeste abrindo um relatório.", "url": null, "bold": false, "italic": false, "underline": false }
+  ],
+  "observations": "", "links": [], "archived": false, "deleted": false, "customIcon": "document"
+}
