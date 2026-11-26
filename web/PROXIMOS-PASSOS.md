@@ -44,7 +44,7 @@ Pendências do servidor (pequenas): adicionar software à máquina; movimentaç�
 
 ## Passo a passo das telas (depois do Node)
 
-1. Criar `telas/` com React + TypeScript (Vite).
+1. ✅ Criar `telas/` com React + TypeScript (Vite 8, React 19, TypeScript 7). Proxy de `/api` para `http://localhost:8080` (conferido com o servidor no ar). Testes com Vitest + Testing Library + jsdom: 2 testes passando (`npm test` na pasta `telas`). Cópias da maquete v32 e das regras em `docs/` (sem a senha de teste da maquete).
 2. Tema claro creme e escuro estilo Notion, com as mesmas variáveis de cor da maquete.
 3. Tela de Chamados ligada à API, depois as outras abas na ordem do servidor.
 
