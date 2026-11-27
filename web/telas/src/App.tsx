@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
+import type { Chamado, StatusChamado } from './api/chamados'
 import { buscarSaude } from './api/saude'
+import { FILTRO_INICIAL, type Filtro } from './chamados/estado'
 import type { AbaChamado } from './chamados/FichaChamado'
 import { TelaChamados } from './chamados/TelaChamados'
+import { TelaInicio } from './inicio/TelaInicio'
 import { Configuracoes } from './configuracoes/Configuracoes'
 import { SenhaEdicao } from './configuracoes/SenhaEdicao'
 import { useEdicao } from './edicao/useEdicao'
@@ -11,8 +14,9 @@ import { Lateral } from './leiaute/Lateral'
 import { Topo } from './leiaute/Topo'
 import { useAvisoRapido } from './leiaute/useAvisoRapido'
 import './leiaute/leiaute.css'
-import { definicaoDe, PERFIL_PROVISORIO, TECNICOS_PROVISORIOS, type Secao } from './secoes'
+import { definicaoDe, PERFIL_PROVISORIO, PESSOA_DO_PERFIL, TECNICOS_PROVISORIOS, type Secao } from './secoes'
 import { useTema } from './tema/useTema'
+import { lerRecentes, registrarRecente, type Recente } from './util/recentes'
 import { useAgora } from './util/useAgora'
 
 type Dialogo = 'nenhum' | 'configuracoes' | 'senha'
@@ -25,7 +29,9 @@ function App() {
   const [dialogo, setDialogo] = useState<Dialogo>('nenhum')
   const [servidorFora, setServidorFora] = useState(false)
   const [chamados, setChamados] = useState<EstadoChamados>({ aberto: null, aba: 'dados' })
+  const [filtroChamados, setFiltroChamados] = useState<Filtro>(FILTRO_INICIAL)
   const [maquinaPedida, setMaquinaPedida] = useState<string | null>(null)
+  const [recentes, setRecentes] = useState<Recente[]>(lerRecentes)
   const tema = useTema()
   const edicao = useEdicao()
   const { mensagem, avisar } = useAvisoRapido()
@@ -59,6 +65,24 @@ function App() {
     setSecao('inventario')
   }
 
+  const abrirChamado = (numero: string) => {
+    setChamados({ aberto: numero, aba: 'dados' })
+    setSecao('chamados')
+  }
+
+  // Os cards do Início abrem a lista já filtrada (como na maquete: limpa técnico, secretaria e busca).
+  const abrirListaChamados = (status: StatusChamado) => {
+    setFiltroChamados((f) => ({ ...f, status, tecnico: '', secretaria: '', busca: '', ...(status === 'Fechado' ? { periodo: '30' as const } : {}) }))
+    setChamados({ aberto: null, aba: 'dados' })
+    setSecao('chamados')
+  }
+
+  const visitarChamado = useCallback((c: Chamado) => {
+    setRecentes(
+      registrarRecente({ tipo: 'chamado', id: c.numero, titulo: `Chamado ${c.numero} · ${c.problema}`, local: `Chamados · ${c.setor}`, quando: Date.now() }),
+    )
+  }, [])
+
   const caminho = secao === 'chamados' && chamados.aberto ? ['Chamados', chamados.aberto] : [def.titulo]
 
   return (
@@ -84,13 +108,31 @@ function App() {
               aoAbrir={(numero, aba) => setChamados({ aberto: numero, aba })}
               aoVoltar={() => setChamados({ aberto: null, aba: 'dados' })}
               aoAbrirMaquina={abrirMaquina}
+              aoVisitarChamado={visitarChamado}
+              filtro={filtroChamados}
+              aoMudarFiltro={setFiltroChamados}
               avisar={avisar}
               tecnicos={TECNICOS_PROVISORIOS}
               agora={agora}
             />
           </section>
 
-          {secao !== 'chamados' && (
+          {secao === 'inicio' && (
+            <section className="secao">
+              <TelaInicio
+                perfil={PERFIL_PROVISORIO}
+                eu={PESSOA_DO_PERFIL[PERFIL_PROVISORIO] ?? PERFIL_PROVISORIO}
+                agora={agora}
+                recentes={recentes}
+                aoAbrirChamado={abrirChamado}
+                aoAbrirLista={abrirListaChamados}
+                aoIrCalendario={() => setSecao('calendario')}
+                aoAbrirRecente={(r) => abrirChamado(r.id)}
+              />
+            </section>
+          )}
+
+          {secao !== 'chamados' && secao !== 'inicio' && (
             <section className="secao">
               <CabecalhoPagina titulo={def.titulo} subtitulo={def.subtitulo} />
               {secao === 'inventario' && maquinaPedida && (

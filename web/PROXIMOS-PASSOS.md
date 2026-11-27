@@ -57,7 +57,12 @@ Pendências do servidor (pequenas): adicionar software à máquina; movimentaç�
    - O chamado aberto, a aba e o que foi digitado continuam iguais ao trocar de seção.
    - 37 testes passando. Contrato conferido com o servidor no ar (lista, 422, 404 e ficha da máquina).
    - Ficou para depois (pendências do servidor ou fora da lista desta etapa): registrar chamado, assumir, trocar técnico na linha, PDF e Excel, movimentação junto do fechamento, processos parecidos. Técnicos fixos (Magno, Diego, Rafael) até existir o cadastro de usuários.
-4. Início, depois Inventário, Processos, Contatos e Calendário.
+4. ✅ **Início** (27/11/2026): data por extenso e saudação; resumo; aviso urgente do calendário no topo; 4 cards clicáveis (Abertos, Em andamento, Esperando há mais tempo — só abertos e sem não computáveis —, Fechados hoje + média de 30 dias); "Precisa de atenção"; "Sem técnico" (Triagem) ou "Com você"; Hoje/Amanhã do calendário; "Continue de onde parou" (chamados abertos por último, guardados neste computador em `helplixo-recentes`).
+   - Os abertos e em andamento vêm sem limite de data (`status=` no servidor), para nenhum chamado antigo ficar de fora.
+   - O filtro da lista de Chamados agora fica no App: os cards abrem a lista já filtrada.
+   - 50 testes passando. Conferido com o servidor no ar.
+   - Provisório: "você" é a pessoa da maquete para o perfil (Triagem = Lúcia) até existir o login.
+5. Inventário, depois Processos, Contatos e Calendário.
 
 ## Regras que continuam valendo
 

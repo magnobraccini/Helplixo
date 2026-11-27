@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { buscarChamado, listarChamados, type Chamado } from '../api/chamados'
 import { CabecalhoPagina } from '../leiaute/CabecalhoPagina'
 import { DIA, idade, inicioDoDia, instante, isoData } from '../util/datas'
-import { FILTRO_INICIAL, formularioNovo, type DadosFormulario, type Filtro } from './estado'
+import { formularioNovo, type DadosFormulario, type Filtro } from './estado'
 import { FichaChamado, type AbaChamado } from './FichaChamado'
 import { ListaChamados } from './ListaChamados'
 import { intervaloDoPeriodo } from './regras'
@@ -15,6 +15,11 @@ type Props = {
   aoAbrir: (numero: string, aba: AbaChamado) => void
   aoVoltar: () => void
   aoAbrirMaquina: (nSemin: string) => void
+  /** Chamado aberto na ficha (para o "Continue de onde parou"). */
+  aoVisitarChamado: (c: Chamado) => void
+  /** O filtro fica no App: os cards do Início abrem a lista já filtrada. */
+  filtro: Filtro
+  aoMudarFiltro: (f: Filtro) => void
   avisar: (mensagem: string) => void
   tecnicos: string[]
   agora: number
@@ -24,7 +29,7 @@ type Props = {
 type Carga = { chave: string; doPeriodo: Chamado[]; recentes: Chamado[]; erro: string }
 
 export function TelaChamados(p: Props) {
-  const [filtro, setFiltro] = useState<Filtro>(FILTRO_INICIAL)
+  const filtro = p.filtro
   const [carga, setCarga] = useState<Carga>({ chave: '', doPeriodo: [], recentes: [], erro: '' })
   const [detalhes, setDetalhes] = useState<Record<string, Chamado>>({})
   const [formularios, setFormularios] = useState<Record<string, DadosFormulario>>({})
@@ -60,12 +65,16 @@ export function TelaChamados(p: Props) {
     if (!aberto) return
     let ativo = true
     buscarChamado(aberto)
-      .then((c) => ativo && setDetalhes((d) => ({ ...d, [c.numero]: c })))
+      .then((c) => {
+        if (!ativo) return
+        setDetalhes((d) => ({ ...d, [c.numero]: c }))
+        p.aoVisitarChamado(c)
+      })
       .catch(() => ativo && p.avisar(`Não foi possível abrir o chamado ${aberto}.`))
     return () => {
       ativo = false
     }
-    // p.avisar é estável (useCallback no App)
+    // só quando muda o chamado aberto (as funções do App não mudam o que se busca)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aberto])
 
@@ -127,7 +136,7 @@ export function TelaChamados(p: Props) {
       <CabecalhoPagina titulo="Chamados" subtitulo="Pedidos de suporte por período, secretaria e técnico." />
       <ListaChamados
         filtro={filtro}
-        aoMudarFiltro={setFiltro}
+        aoMudarFiltro={p.aoMudarFiltro}
         doPeriodo={doPeriodo}
         recentes={carga.recentes}
         textoPeriodo={intervalo?.texto ?? ''}

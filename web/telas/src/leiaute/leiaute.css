@@ -185,6 +185,7 @@
   gap: 14px;
   font-size: 14px;
 }
+.caixa-erro { margin: 0; padding: 10px 12px; border-radius: 6px; background: var(--c-fdebec); color: var(--c-5d1715); font-size: 13px; }
 .secao { display: flex; flex-direction: column; gap: 14px; }
 .secao[hidden] { display: none; }
 .pagina-cabecalho { display: flex; flex-direction: column; gap: 4px; margin-top: 26px; }

@@ -36,7 +36,8 @@ describe('menu lateral e capa', () => {
     for (const r of rotulos) expect(within(menu).getByRole('button', { name: new RegExp(r) })).toBeInTheDocument()
     expect(within(menu).getByRole('button', { name: /Início/ })).toHaveAttribute('aria-current', 'page')
     expect(within(menu).getByRole('button', { name: /Chamados/ })).toHaveTextContent('🎫')
-    expect(screen.getByRole('heading', { level: 1, name: 'Início' })).toBeInTheDocument()
+    // O Início abre com a saudação no lugar do título.
+    expect(screen.getByRole('heading', { level: 1, name: /^(Bom dia|Boa tarde|Boa noite), Lúcia$/ })).toBeInTheDocument()
   })
 
   it('ao trocar de seção, mudam o título, o caminho, a capa e o item marcado', async () => {
@@ -67,7 +68,8 @@ describe('menu lateral e capa', () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')))
     abrirApp()
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Servidor fora do ar')
+    const avisos = await screen.findAllByRole('alert')
+    expect(avisos.some((a) => a.textContent?.includes('Servidor fora do ar'))).toBe(true)
   })
 })
 

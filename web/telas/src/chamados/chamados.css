@@ -23,7 +23,6 @@
 }
 
 .chamados-resumo { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; color: var(--c-4a5263); }
-.caixa-erro { margin: 0; padding: 10px 12px; border-radius: 6px; background: var(--c-fdebec); color: var(--c-5d1715); font-size: 13px; }
 
 /* tabela */
 .tabela-rolagem { overflow-x: auto; }

@@ -29,5 +29,8 @@ export function definicaoDe(secao: Secao): DefinicaoSecao {
 /** Perfil de quem está usando. Provisório até existir o login (o servidor usa o cabeçalho X-Cargo). */
 export const PERFIL_PROVISORIO = 'Triagem'
 
+/** Quem é "você" em cada perfil, como na maquete (cargos). Provisório até existir o login. */
+export const PESSOA_DO_PERFIL: Record<string, string> = { 'Triagem': 'Lúcia', 'Técnico': 'Magno', 'Chefe de TI': 'Rafael' }
+
 /** Técnicos da equipe, como na maquete. Provisório até existir o cadastro de usuários no servidor. */
 export const TECNICOS_PROVISORIOS = ['Magno', 'Diego', 'Rafael']

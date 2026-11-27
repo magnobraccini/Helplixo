@@ -39,9 +39,10 @@ export type PedidoResultado = {
 
 export type Resultado = { chamado: Chamado; avisos: string[] }
 
-/** Chamados abertos entre `de` e `ate` (datas 2026-11-25, o dia `ate` inteiro). */
-export function listarChamados(de: string, ate: string): Promise<Chamado[]> {
+/** Chamados abertos entre `de` e `ate` (datas 2026-11-25, o dia `ate` inteiro). `status` filtra no servidor. */
+export function listarChamados(de: string, ate: string, status?: StatusChamado): Promise<Chamado[]> {
   const q = new URLSearchParams({ de, ate })
+  if (status) q.set('status', status)
   return pedir<Chamado[]>(`/api/chamados?${q}`)
 }
 
