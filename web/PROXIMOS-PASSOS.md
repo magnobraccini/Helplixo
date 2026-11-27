@@ -68,7 +68,15 @@ Pendências do servidor (pequenas): adicionar software à máquina; movimentaç�
 6. ✅ **Processos** (27/11/2026, só leitura como o servidor): árvore de pastas com total, abrir/fechar, "Abrir todas"/"Fechar todas"; busca pelo servidor (sem acento) mostrando só o caminho até os achados; o processo abre ao lado, em painel com rolagem própria, com pasta, responsável, data, tags, e o índice "Neste processo" que acompanha a rolagem; blocos do Helplixo atual (títulos, parágrafos, listas, código, avisos, imagem, link, passos do formato antigo); caminhos de pasta são copiados (o navegador não abre pastas locais). Entra em "Continue de onde parou".
    - 70 testes passando. Conferido com o servidor no ar.
    - Ficou para depois (pendências do servidor): criar/editar processos e pastas, anexos e imagens (a imagem aparece como espaço reservado com a legenda), processos parecidos.
-7. Contatos e Calendário.
+7. ✅ **Contatos** (27/11/2026): Internos e Externos trocando com um clique (com a contagem); filtros no servidor (secretaria, andar, ordem; serviço e situação do contrato) com as opções que o servidor manda; contrato com cor (vencido, vence em até 60 dias, em dia); "Novo contato" no modo edição, avisando com quem o ramal é dividido; a lista recarrega na hora.
+8. ✅ **Calendário** (27/11/2026): visões Dia, Semana, Mês e Agenda; "Hoje", ‹ e ›; busca; agendas por tipo que ligam e desligam; fins de semana opcionais; expediente 8h–14h destacado e a linha da hora atual; clicar num horário da Semana/Dia marca ali; detalhe com repetição, descrição, autor e "Entrou sozinho" para os automáticos; remover só o próprio cargo ou um cargo acima no mesmo setor (`X-Cargo`); "Novo aviso" para todos e "Nova marcação" no modo edição (`X-Usuario`/`X-Cargo`/chave). Lembretes no sino (`/api/calendario/lembretes`, a cada minuto), com contador e "Marcar todas como lidas".
+   - 92 testes passando. Contrato de Contatos e Calendário conferido com o servidor no ar (403 sem chave, 201 com chave, aviso da Triagem, manutenção recusada sem modo edição, remoção).
+   - Provisório: o formulário de marcação ainda não tem a caixa "Urgente" (a maquete não tem; o servidor aceita).
+
+## O que falta (precisa de decisão ou do servidor)
+
+- Servidor: registrar chamado; assumir e trocar técnico; movimentação junto do fechamento; lista de todas as movimentações (aba "Movimentações" do Inventário); adicionar software à máquina; criar/editar processos e pastas com anexos (e entregar as imagens dos processos); processos parecidos; login com permissões; banco de dados.
+- Telas: Ferramentas (fora do plano desta etapa); busca única (Ctrl K); PDF e Excel dos chamados.
 
 ## Regras que continuam valendo
 

@@ -11,6 +11,10 @@ import { TelaInventario } from './inventario/TelaInventario'
 import type { DetalheProcesso } from './api/processos'
 import { TelaProcessos } from './processos/TelaProcessos'
 import { TelaContatos } from './contatos/TelaContatos'
+import { listarLembretes, type Lembrete } from './api/calendario'
+import { faltaTexto } from './calendario/regras'
+import { TelaCalendario } from './calendario/TelaCalendario'
+import type { Notificacao } from './leiaute/Topo'
 import { Configuracoes } from './configuracoes/Configuracoes'
 import { SenhaEdicao } from './configuracoes/SenhaEdicao'
 import { useEdicao } from './edicao/useEdicao'
@@ -45,6 +49,21 @@ function App() {
   const { mensagem, avisar } = useAvisoRapido()
   const agora = useAgora()
   const def = definicaoDe(secao)
+  const [lembretes, setLembretes] = useState<Lembrete[]>([])
+  const [recargaLembretes, setRecargaLembretes] = useState(0)
+  const quem = { usuario: PESSOA_DO_PERFIL[PERFIL_PROVISORIO] ?? PERFIL_PROVISORIO, cargo: PERFIL_PROVISORIO }
+
+  // Lembretes do calendário: aparecem só no sino. Confere a cada minuto e depois de cada mudança.
+  useEffect(() => {
+    let ativo = true
+    listarLembretes()
+      .then((l) => ativo && setLembretes(l))
+      .catch(() => {})
+    return () => {
+      ativo = false
+    }
+  }, [agora, recargaLembretes])
+  const notificacoes: Notificacao[] = lembretes.map((l) => ({ id: `${l.id}-${l.inicio}`, texto: l.texto, quando: faltaTexto(l.faltaMinutos) }))
 
   // Confere uma vez se o servidor está no ar; se não estiver, a página avisa.
   useEffect(() => {
@@ -118,7 +137,13 @@ function App() {
       <Lateral secaoAtual={secao} aoEscolher={setSecao} aoAbrirConfiguracoes={() => setDialogo('configuracoes')} />
 
       <div className="conteudo">
-        <Topo caminho={caminho} perfil={PERFIL_PROVISORIO} editando={edicao.ligado} />
+        <Topo
+          caminho={caminho}
+          perfil={PERFIL_PROVISORIO}
+          editando={edicao.ligado}
+          notificacoes={notificacoes}
+          aoAbrirNotificacao={() => setSecao('calendario')}
+        />
         <Capa cena={def.cena} tema={tema.efetivo} />
 
         <main className="pagina">
@@ -195,7 +220,19 @@ function App() {
             </section>
           )}
 
-          {!['chamados', 'inicio', 'inventario', 'processos', 'contatos'].includes(secao) && (
+          {secao === 'calendario' && (
+            <section className="secao">
+              <TelaCalendario
+                agora={agora}
+                editando={edicao.ligado}
+                quem={{ ...quem, chave: edicao.chave }}
+                avisar={avisar}
+                aoMudar={() => setRecargaLembretes((n) => n + 1)}
+              />
+            </section>
+          )}
+
+          {!['chamados', 'inicio', 'inventario', 'processos', 'contatos', 'calendario'].includes(secao) && (
             <section className="secao">
               <CabecalhoPagina titulo={def.titulo} subtitulo={def.subtitulo} />
               <p className="pagina-em-breve">Esta tela entra nos próximos passos.</p>
