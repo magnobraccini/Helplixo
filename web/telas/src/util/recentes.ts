@@ -2,8 +2,7 @@
 // guardado neste computador (localStorage).
 
 export type Recente = {
-  /** Chamados e máquinas; processos entram com a tela deles. */
-  tipo: 'chamado' | 'maquina'
+  tipo: 'chamado' | 'maquina' | 'processo'
   id: string
   titulo: string
   /** Onde fica (ex.: "Chamados · Tributação - SEFAZ") */

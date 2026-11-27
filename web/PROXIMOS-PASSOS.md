@@ -65,7 +65,10 @@ Pendências do servidor (pequenas): adicionar software à máquina; movimentaç�
 5. ✅ **Inventário** (27/11/2026): busca com mínimo de 2 letras (resumo e "Vistas recentemente" sem busca); ficha com as 4 abas (Identificação e configuração, Informações de compra, Softwares instalados com a faixa do Office, Consertos e histórico com link para o chamado); adicionar e editar máquina e dar/desfazer baixa no modo edição (chave e `X-Usuario` nos cabeçalhos); registrar movimentação (sem modo edição). O Nº Semin dos chamados abre a ficha.
    - 58 testes passando. Contrato conferido com o servidor no ar (busca, ficha, 403 sem chave, edição com chave, movimentação, 422 da baixa com chamado aberto).
    - Ficou para depois (precisam do servidor): aba "Movimentações" com a lista do período (não há endpoint que liste todas) e "Adicionar software" (pendência). Setores e locais fixos da maquete até existir um cadastro.
-6. Processos, depois Contatos e Calendário.
+6. ✅ **Processos** (27/11/2026, só leitura como o servidor): árvore de pastas com total, abrir/fechar, "Abrir todas"/"Fechar todas"; busca pelo servidor (sem acento) mostrando só o caminho até os achados; o processo abre ao lado, em painel com rolagem própria, com pasta, responsável, data, tags, e o índice "Neste processo" que acompanha a rolagem; blocos do Helplixo atual (títulos, parágrafos, listas, código, avisos, imagem, link, passos do formato antigo); caminhos de pasta são copiados (o navegador não abre pastas locais). Entra em "Continue de onde parou".
+   - 70 testes passando. Conferido com o servidor no ar.
+   - Ficou para depois (pendências do servidor): criar/editar processos e pastas, anexos e imagens (a imagem aparece como espaço reservado com a legenda), processos parecidos.
+7. Contatos e Calendário.
 
 ## Regras que continuam valendo
 

@@ -8,6 +8,8 @@ import { TelaInicio } from './inicio/TelaInicio'
 import type { Maquina } from './api/inventario'
 import type { AbaMaquina } from './inventario/FichaMaquina'
 import { TelaInventario } from './inventario/TelaInventario'
+import type { DetalheProcesso } from './api/processos'
+import { TelaProcessos } from './processos/TelaProcessos'
 import { Configuracoes } from './configuracoes/Configuracoes'
 import { SenhaEdicao } from './configuracoes/SenhaEdicao'
 import { useEdicao } from './edicao/useEdicao'
@@ -35,6 +37,7 @@ function App() {
   const [chamados, setChamados] = useState<EstadoChamados>({ aberto: null, aba: 'dados' })
   const [filtroChamados, setFiltroChamados] = useState<Filtro>(FILTRO_INICIAL)
   const [inventario, setInventario] = useState<EstadoInventario>({ aberta: null, aba: 'ident' })
+  const [processoAberto, setProcessoAberto] = useState<string | null>(null)
   const [recentes, setRecentes] = useState<Recente[]>(lerRecentes)
   const tema = useTema()
   const edicao = useEdicao()
@@ -91,7 +94,16 @@ function App() {
     setRecentes(registrarRecente({ tipo: 'maquina', id: m.nSemin, titulo: `${m.nSemin} · ${m.tipo} ${m.modelo}`, local: `Inventário · ${m.local}`, quando: Date.now() }))
   }, [])
 
-  const abrirRecente = (r: Recente) => (r.tipo === 'maquina' ? abrirMaquina(r.id) : abrirChamado(r.id))
+  const visitarProcesso = useCallback((d: DetalheProcesso) => {
+    setRecentes(registrarRecente({ tipo: 'processo', id: d.processo.id, titulo: d.processo.titulo, local: d.caminho.join(' › ') || 'Processos', quando: Date.now() }))
+  }, [])
+
+  const abrirProcesso = (id: string) => {
+    setProcessoAberto(id)
+    setSecao('processos')
+  }
+
+  const abrirRecente = (r: Recente) => (r.tipo === 'maquina' ? abrirMaquina(r.id) : r.tipo === 'processo' ? abrirProcesso(r.id) : abrirChamado(r.id))
 
   const caminho =
     secao === 'chamados' && chamados.aberto
@@ -165,7 +177,18 @@ function App() {
             />
           </section>
 
-          {!['chamados', 'inicio', 'inventario'].includes(secao) && (
+          {/* Sempre montada: a árvore aberta, a busca e o processo lido continuam iguais ao voltar. */}
+          <section hidden={secao !== 'processos'} className="secao">
+            <TelaProcessos
+              aberto={processoAberto}
+              aoAbrir={setProcessoAberto}
+              aoFechar={() => setProcessoAberto(null)}
+              aoVisitar={visitarProcesso}
+              avisar={avisar}
+            />
+          </section>
+
+          {!['chamados', 'inicio', 'inventario', 'processos'].includes(secao) && (
             <section className="secao">
               <CabecalhoPagina titulo={def.titulo} subtitulo={def.subtitulo} />
               <p className="pagina-em-breve">Esta tela entra nos próximos passos.</p>
