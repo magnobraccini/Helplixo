@@ -6,8 +6,14 @@ import '../chamados/chamados.css'
 import '../inventario/inventario.css'
 import './contatos.css'
 
-type Props = { editando: boolean; chave: string | null; avisar: (mensagem: string) => void }
-type Visao = 'internos' | 'externos'
+export type Visao = 'internos' | 'externos'
+type Props = {
+  editando: boolean
+  chave: string | null
+  avisar: (mensagem: string) => void
+  /** Vindo da busca única: abre já nesta visão e com este texto. */
+  inicio?: { visao: Visao; q: string }
+}
 
 const CORES_CONTRATO: Record<SituacaoContrato, [string, string]> = {
   vencido: ['var(--c-fdebec)', 'var(--c-8a2a27)'],
@@ -19,9 +25,9 @@ const INTERNOS_INICIAL: Omit<FiltroInternos, 'q'> = { secretaria: '', andar: '',
 const EXTERNOS_INICIAL: Omit<FiltroExternos, 'q'> = { categoria: '', situacao: '' }
 
 /** Internos (ramais) e Externos (fornecedores e contratos), trocando com um clique. Os filtros rodam no servidor. */
-export function TelaContatos({ editando, chave, avisar }: Props) {
-  const [visao, setVisao] = useState<Visao>('internos')
-  const [q, setQ] = useState('')
+export function TelaContatos({ editando, chave, avisar, inicio }: Props) {
+  const [visao, setVisao] = useState<Visao>(inicio?.visao ?? 'internos')
+  const [q, setQ] = useState(inicio?.q ?? '')
   const [fi, setFi] = useState(INTERNOS_INICIAL)
   const [fx, setFx] = useState(EXTERNOS_INICIAL)
   const [internos, setInternos] = useState<ListaInternos | null>(null)

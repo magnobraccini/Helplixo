@@ -4,9 +4,10 @@ type Props = {
   secaoAtual: Secao
   aoEscolher: (secao: Secao) => void
   aoAbrirConfiguracoes: () => void
+  aoAbrirBusca: () => void
 }
 
-export function Lateral({ secaoAtual, aoEscolher, aoAbrirConfiguracoes }: Props) {
+export function Lateral({ secaoAtual, aoEscolher, aoAbrirConfiguracoes, aoAbrirBusca }: Props) {
   return (
     <nav aria-label="Seções" className="lateral">
       <div className="lateral-marca">
@@ -14,6 +15,14 @@ export function Lateral({ secaoAtual, aoEscolher, aoAbrirConfiguracoes }: Props)
         <span className="lateral-marca-nome">Helplixo</span>
         <span className="lateral-marca-setor">TI</span>
       </div>
+      <button type="button" className="lateral-item" onClick={aoAbrirBusca} aria-keyshortcuts="Control+K">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" />
+          <path d="M21 21l-4.3-4.3" />
+        </svg>
+        <span className="lateral-rotulo">Buscar</span>
+        <span aria-hidden="true" className="lateral-tecla">Ctrl K</span>
+      </button>
       <button type="button" className="lateral-item" onClick={aoAbrirConfiguracoes}>
         <span aria-hidden="true" className="lateral-emoji-config">⚙️</span>
         <span className="lateral-rotulo">Configurações</span>

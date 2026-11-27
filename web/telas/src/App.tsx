@@ -10,7 +10,9 @@ import type { AbaMaquina } from './inventario/FichaMaquina'
 import { TelaInventario } from './inventario/TelaInventario'
 import type { DetalheProcesso } from './api/processos'
 import { TelaProcessos } from './processos/TelaProcessos'
-import { TelaContatos } from './contatos/TelaContatos'
+import { TelaContatos, type Visao as VisaoContatos } from './contatos/TelaContatos'
+import { BuscaGlobal } from './busca/BuscaGlobal'
+import type { Destino } from './busca/grupos'
 import { listarLembretes, type Lembrete } from './api/calendario'
 import { faltaTexto } from './calendario/regras'
 import { TelaCalendario } from './calendario/TelaCalendario'
@@ -29,7 +31,7 @@ import { useTema } from './tema/useTema'
 import { lerRecentes, registrarRecente, type Recente } from './util/recentes'
 import { useAgora } from './util/useAgora'
 
-type Dialogo = 'nenhum' | 'configuracoes' | 'senha'
+type Dialogo = 'nenhum' | 'configuracoes' | 'senha' | 'busca'
 
 /** O chamado (ou a máquina) aberto e a aba ficam aqui para sobreviver à troca de seção. */
 type EstadoChamados = { aberto: string | null; aba: AbaChamado }
@@ -44,6 +46,8 @@ function App() {
   const [inventario, setInventario] = useState<EstadoInventario>({ aberta: null, aba: 'ident' })
   const [processoAberto, setProcessoAberto] = useState<string | null>(null)
   const [recentes, setRecentes] = useState<Recente[]>(lerRecentes)
+  // A busca única pode abrir os Contatos já filtrados; a contagem troca a `key` e recomeça a tela.
+  const [contatosInicio, setContatosInicio] = useState<{ visao: VisaoContatos; q: string; vez: number }>({ visao: 'internos', q: '', vez: 0 })
   const tema = useTema()
   const edicao = useEdicao()
   const { mensagem, avisar } = useAvisoRapido()
@@ -77,6 +81,18 @@ function App() {
   }, [])
 
   const fecharDialogo = useCallback(() => setDialogo('nenhum'), [])
+
+  // Ctrl K (ou Cmd K no Mac) abre a busca única de qualquer lugar.
+  useEffect(() => {
+    const aoTeclar = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setDialogo('busca')
+      }
+    }
+    document.addEventListener('keydown', aoTeclar)
+    return () => document.removeEventListener('keydown', aoTeclar)
+  }, [])
 
   const alternarEdicao = () => {
     if (edicao.ligado) {
@@ -123,6 +139,16 @@ function App() {
     setSecao('processos')
   }
 
+  const abrirDaBusca = (d: Destino) => {
+    if (d.tipo === 'chamado') abrirChamado(d.id)
+    else if (d.tipo === 'maquina') abrirMaquina(d.id)
+    else if (d.tipo === 'processo') abrirProcesso(d.id)
+    else {
+      setContatosInicio((c) => ({ visao: d.visao, q: d.q, vez: c.vez + 1 }))
+      setSecao('contatos')
+    }
+  }
+
   const abrirRecente = (r: Recente) => (r.tipo === 'maquina' ? abrirMaquina(r.id) : r.tipo === 'processo' ? abrirProcesso(r.id) : abrirChamado(r.id))
 
   const caminho =
@@ -134,7 +160,12 @@ function App() {
 
   return (
     <div className="app">
-      <Lateral secaoAtual={secao} aoEscolher={setSecao} aoAbrirConfiguracoes={() => setDialogo('configuracoes')} />
+      <Lateral
+        secaoAtual={secao}
+        aoEscolher={setSecao}
+        aoAbrirConfiguracoes={() => setDialogo('configuracoes')}
+        aoAbrirBusca={() => setDialogo('busca')}
+      />
 
       <div className="conteudo">
         <Topo
@@ -216,7 +247,7 @@ function App() {
 
           {secao === 'contatos' && (
             <section className="secao">
-              <TelaContatos editando={edicao.ligado} chave={edicao.chave} avisar={avisar} />
+              <TelaContatos key={contatosInicio.vez} inicio={contatosInicio} editando={edicao.ligado} chave={edicao.chave} avisar={avisar} />
             </section>
           )}
 
@@ -250,6 +281,7 @@ function App() {
           aoFechar={fecharDialogo}
         />
       )}
+      {dialogo === 'busca' && <BuscaGlobal agora={agora} aoAbrir={abrirDaBusca} aoFechar={fecharDialogo} />}
       {dialogo === 'senha' && (
         <SenhaEdicao
           entrar={edicao.entrar}

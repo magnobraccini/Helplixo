@@ -72,11 +72,12 @@ Pendências do servidor (pequenas): adicionar software à máquina; movimentaç�
 8. ✅ **Calendário** (27/11/2026): visões Dia, Semana, Mês e Agenda; "Hoje", ‹ e ›; busca; agendas por tipo que ligam e desligam; fins de semana opcionais; expediente 8h–14h destacado e a linha da hora atual; clicar num horário da Semana/Dia marca ali; detalhe com repetição, descrição, autor e "Entrou sozinho" para os automáticos; remover só o próprio cargo ou um cargo acima no mesmo setor (`X-Cargo`); "Novo aviso" para todos e "Nova marcação" no modo edição (`X-Usuario`/`X-Cargo`/chave). Lembretes no sino (`/api/calendario/lembretes`, a cada minuto), com contador e "Marcar todas como lidas".
    - 92 testes passando. Contrato de Contatos e Calendário conferido com o servidor no ar (403 sem chave, 201 com chave, aviso da Triagem, manutenção recusada sem modo edição, remoção).
    - Provisório: o formulário de marcação ainda não tem a caixa "Urgente" (a maquete não tem; o servidor aceita).
+9. ✅ **Busca única** (27/11/2026): Ctrl K (ou "Buscar" na lateral) abre a janela da maquete com Chamados, Máquinas, Processos, Contatos internos e externos (até 5 por grupo; 3 sem texto). Chamados dos últimos 90 dias filtrados na tela; o resto vem do servidor (`/api/inventario`, `/api/processos`, `/api/contatos/...`) a partir de 2 letras, esperando parar de digitar. Escolher um item abre o chamado, a máquina, o processo ou os Contatos já filtrados. 98 testes passando; conferido com o servidor no ar.
 
 ## O que falta (precisa de decisão ou do servidor)
 
 - Servidor: registrar chamado; assumir e trocar técnico; movimentação junto do fechamento; lista de todas as movimentações (aba "Movimentações" do Inventário); adicionar software à máquina; criar/editar processos e pastas com anexos (e entregar as imagens dos processos); processos parecidos; login com permissões; banco de dados.
-- Telas: Ferramentas (fora do plano desta etapa); busca única (Ctrl K); PDF e Excel dos chamados.
+- Telas: Ferramentas (fora do plano desta etapa); PDF e Excel dos chamados.
 
 ## Regras que continuam valendo
 
