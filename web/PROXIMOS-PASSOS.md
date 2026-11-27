@@ -51,7 +51,13 @@ Pendências do servidor (pequenas): adicionar software à máquina; movimentaç�
    - Configurações: tema Claro/Escuro/Sistema (salvo em `localStorage`, chave `helplixo-tema`) e interruptor do Modo Edição. A senha vai para `POST /api/edicao/entrar`; a tela guarda só a chave de 8 horas (`sessionStorage`), confere a chave ao abrir e desliga sozinha quando ela vence.
    - 13 testes passando (`npm test`).
    - Provisório: o perfil é fixo em "Triagem" até existir o login; o sino ainda não tem notificações (entram com Chamados e Calendário); a busca única (Ctrl K) e o número de abertos ao lado de "Chamados" ficam para as telas que os alimentam.
-3. Tela de Chamados ligada à API, depois as outras abas na ordem do servidor.
+3. ✅ **Chamados** (27/11/2026), ligada a `GET /api/chamados`, `GET /api/chamados/{n}`, `POST /api/chamados/{n}/resultado` e `GET /api/inventario/{nSemin}`:
+   - Lista: abas de status com contagem, filtros (período no servidor; secretaria, técnico e busca na tela), linha que abre a descrição e a última atualização, "Ver detalhes" e "Atualizar", Nº Semin clicável (leva ao Inventário), `↺` (outros chamados da máquina nos últimos 7 dias) e `Min.` colorida pela regra.
+   - Ficha: abas Dados → Resultado → Histórico da máquina; formulário único de Resultado (o servidor confere as regras; a tela mostra os erros 422 e a "Conferência do horário"); andamento e "Atendido".
+   - O chamado aberto, a aba e o que foi digitado continuam iguais ao trocar de seção.
+   - 37 testes passando. Contrato conferido com o servidor no ar (lista, 422, 404 e ficha da máquina).
+   - Ficou para depois (pendências do servidor ou fora da lista desta etapa): registrar chamado, assumir, trocar técnico na linha, PDF e Excel, movimentação junto do fechamento, processos parecidos. Técnicos fixos (Magno, Diego, Rafael) até existir o cadastro de usuários.
+4. Início, depois Inventário, Processos, Contatos e Calendário.
 
 ## Regras que continuam valendo
 

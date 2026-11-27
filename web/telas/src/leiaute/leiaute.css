@@ -185,6 +185,8 @@
   gap: 14px;
   font-size: 14px;
 }
+.secao { display: flex; flex-direction: column; gap: 14px; }
+.secao[hidden] { display: none; }
 .pagina-cabecalho { display: flex; flex-direction: column; gap: 4px; margin-top: 26px; }
 .pagina-titulo { margin: 0; font-size: 32px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
 .pagina-subtitulo { margin: 0; font-size: 14px; color: var(--c-677085); }

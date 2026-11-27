@@ -18,7 +18,8 @@ export function servidorFalso(rotas: Record<string, Rota>) {
       corpo: typeof opcoes?.body === 'string' ? JSON.parse(opcoes.body) : undefined,
     }
     pedidos.push(pedido)
-    const rota = rotas[`${metodo} ${url}`]
+    // Primeiro o endereço exato; senão, o endereço sem os parâmetros (?de=...&ate=...).
+    const rota = rotas[`${metodo} ${url}`] ?? rotas[`${metodo} ${url.split('?')[0]}`]
     if (!rota) return new Response(JSON.stringify({ erros: ['rota não prevista no teste'] }), { status: 404 })
     const { status = 200, corpo } = rota(pedido)
     return new Response(corpo === undefined ? null : JSON.stringify(corpo), { status })
