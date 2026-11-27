@@ -62,7 +62,10 @@ Pendências do servidor (pequenas): adicionar software à máquina; movimentaç�
    - O filtro da lista de Chamados agora fica no App: os cards abrem a lista já filtrada.
    - 50 testes passando. Conferido com o servidor no ar.
    - Provisório: "você" é a pessoa da maquete para o perfil (Triagem = Lúcia) até existir o login.
-5. Inventário, depois Processos, Contatos e Calendário.
+5. ✅ **Inventário** (27/11/2026): busca com mínimo de 2 letras (resumo e "Vistas recentemente" sem busca); ficha com as 4 abas (Identificação e configuração, Informações de compra, Softwares instalados com a faixa do Office, Consertos e histórico com link para o chamado); adicionar e editar máquina e dar/desfazer baixa no modo edição (chave e `X-Usuario` nos cabeçalhos); registrar movimentação (sem modo edição). O Nº Semin dos chamados abre a ficha.
+   - 58 testes passando. Contrato conferido com o servidor no ar (busca, ficha, 403 sem chave, edição com chave, movimentação, 422 da baixa com chamado aberto).
+   - Ficou para depois (precisam do servidor): aba "Movimentações" com a lista do período (não há endpoint que liste todas) e "Adicionar software" (pendência). Setores e locais fixos da maquete até existir um cadastro.
+6. Processos, depois Contatos e Calendário.
 
 ## Regras que continuam valendo
 

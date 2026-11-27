@@ -119,14 +119,25 @@ describe('lista de chamados', () => {
     expect(screen.getByText('Observação: Sala 301')).toBeInTheDocument()
   })
 
-  it('o Nº Semin abre a máquina no Inventário', async () => {
-    servidorFalso({ ...SAUDE_OK, 'GET /api/chamados': () => ({ corpo: CHAMADOS }) })
+  it('o Nº Semin abre a ficha da máquina no Inventário', async () => {
+    servidorFalso({
+      ...SAUDE_OK,
+      'GET /api/chamados': () => ({ corpo: CHAMADOS }),
+      'GET /api/inventario/IM04': () => ({
+        corpo: {
+          maquina: { nSemin: 'IM04', patrimonio: 'PMS-1', tipo: 'Impressora', modelo: 'HP M428', serie: null, processador: null, memoria: null, armazenamento: null, sistema: null, ip: null, mac: null, local: 'Tributação - SEFAZ', usuario: null, situacao: 'Em uso', observacao: null, compra: null, softwares: [], sistemasPmsl: [], consertos: [], baixa: null },
+          office: { situacao: 'não se aplica', detalhe: 'Não se aplica a este tipo de equipamento.' },
+          garantia: { situacao: 'sem informação', texto: 'Não informada' },
+          historico: [],
+        },
+      }),
+    })
     abrirApp()
     await irParaChamados()
 
     await userEvent.click(within(linhaDo('177456')).getByRole('button', { name: 'IM04' }))
-    expect(screen.getByRole('heading', { level: 1, name: 'Inventário' })).toBeInTheDocument()
-    expect(screen.getByText(/Ficha da máquina IM04/)).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: 'IM04 · Impressora HP M428' })).toBeInTheDocument()
+    expect(screen.getByRole('navigation', { name: 'Caminho' })).toHaveTextContent(/Inventário\/\s*IM04/)
   })
 })
 

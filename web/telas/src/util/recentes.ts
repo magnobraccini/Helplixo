@@ -1,8 +1,9 @@
-// "Continue de onde parou": o que esta pessoa abriu por último, guardado neste computador (localStorage).
+// "Continue de onde parou" e "Vistas recentemente": o que esta pessoa abriu por último,
+// guardado neste computador (localStorage).
 
 export type Recente = {
-  /** Por enquanto só chamados; máquinas e processos entram com as telas deles. */
-  tipo: 'chamado'
+  /** Chamados e máquinas; processos entram com a tela deles. */
+  tipo: 'chamado' | 'maquina'
   id: string
   titulo: string
   /** Onde fica (ex.: "Chamados · Tributação - SEFAZ") */
@@ -12,7 +13,7 @@ export type Recente = {
 }
 
 export const CHAVE_RECENTES = 'helplixo-recentes'
-const MAXIMO = 5
+const MAXIMO = 8
 
 export function lerRecentes(): Recente[] {
   try {
@@ -23,7 +24,7 @@ export function lerRecentes(): Recente[] {
   }
 }
 
-/** Põe o item no topo (sem repetir) e guarda só os 5 mais recentes. */
+/** Põe o item no topo (sem repetir) e guarda só os mais recentes. */
 export function registrarRecente(item: Recente): Recente[] {
   const lista = [item, ...lerRecentes().filter((r) => !(r.tipo === item.tipo && r.id === item.id))].slice(0, MAXIMO)
   try {
