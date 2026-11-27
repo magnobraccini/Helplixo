@@ -44,9 +44,40 @@ Pendências do servidor (pequenas): adicionar software à máquina; movimentaç�
 
 ## Passo a passo das telas (depois do Node)
 
-1. Criar `telas/` com React + TypeScript (Vite).
-2. Tema claro creme e escuro estilo Notion, com as mesmas variáveis de cor da maquete.
-3. Tela de Chamados ligada à API, depois as outras abas na ordem do servidor.
+1. ✅ Criar `telas/` com React + TypeScript (Vite 8, React 19, TypeScript 7). Proxy de `/api` para `http://localhost:8080` (conferido com o servidor no ar). Testes com Vitest + Testing Library + jsdom: 2 testes passando (`npm test` na pasta `telas`). Cópias da maquete v32 e das regras em `docs/` (sem a senha de teste da maquete).
+2. ✅ **Tema e estrutura** (26/11/2026):
+   - Tokens `--c-...` copiados das linhas 14 e 15 da maquete (`telas/src/estilos/tokens.css`). Um teste confere que continuam idênticos.
+   - Menu lateral com emojis, capa ilustrada por aba (gerada a partir do SVG da maquete em `CenasCapa.tsx`, sem balão de fala; no escuro usa a paleta noturna), topo com caminho, `Você: <perfil>` e sino.
+   - Configurações: tema Claro/Escuro/Sistema (salvo em `localStorage`, chave `helplixo-tema`) e interruptor do Modo Edição. A senha vai para `POST /api/edicao/entrar`; a tela guarda só a chave de 8 horas (`sessionStorage`), confere a chave ao abrir e desliga sozinha quando ela vence.
+   - 13 testes passando (`npm test`).
+   - Provisório: o perfil é fixo em "Triagem" até existir o login; o sino ainda não tem notificações (entram com Chamados e Calendário); a busca única (Ctrl K) e o número de abertos ao lado de "Chamados" ficam para as telas que os alimentam.
+3. ✅ **Chamados** (27/11/2026), ligada a `GET /api/chamados`, `GET /api/chamados/{n}`, `POST /api/chamados/{n}/resultado` e `GET /api/inventario/{nSemin}`:
+   - Lista: abas de status com contagem, filtros (período no servidor; secretaria, técnico e busca na tela), linha que abre a descrição e a última atualização, "Ver detalhes" e "Atualizar", Nº Semin clicável (leva ao Inventário), `↺` (outros chamados da máquina nos últimos 7 dias) e `Min.` colorida pela regra.
+   - Ficha: abas Dados → Resultado → Histórico da máquina; formulário único de Resultado (o servidor confere as regras; a tela mostra os erros 422 e a "Conferência do horário"); andamento e "Atendido".
+   - O chamado aberto, a aba e o que foi digitado continuam iguais ao trocar de seção.
+   - 37 testes passando. Contrato conferido com o servidor no ar (lista, 422, 404 e ficha da máquina).
+   - Ficou para depois (pendências do servidor ou fora da lista desta etapa): registrar chamado, assumir, trocar técnico na linha, PDF e Excel, movimentação junto do fechamento, processos parecidos. Técnicos fixos (Magno, Diego, Rafael) até existir o cadastro de usuários.
+4. ✅ **Início** (27/11/2026): data por extenso e saudação; resumo; aviso urgente do calendário no topo; 4 cards clicáveis (Abertos, Em andamento, Esperando há mais tempo — só abertos e sem não computáveis —, Fechados hoje + média de 30 dias); "Precisa de atenção"; "Sem técnico" (Triagem) ou "Com você"; Hoje/Amanhã do calendário; "Continue de onde parou" (chamados abertos por último, guardados neste computador em `helplixo-recentes`).
+   - Os abertos e em andamento vêm sem limite de data (`status=` no servidor), para nenhum chamado antigo ficar de fora.
+   - O filtro da lista de Chamados agora fica no App: os cards abrem a lista já filtrada.
+   - 50 testes passando. Conferido com o servidor no ar.
+   - Provisório: "você" é a pessoa da maquete para o perfil (Triagem = Lúcia) até existir o login.
+5. ✅ **Inventário** (27/11/2026): busca com mínimo de 2 letras (resumo e "Vistas recentemente" sem busca); ficha com as 4 abas (Identificação e configuração, Informações de compra, Softwares instalados com a faixa do Office, Consertos e histórico com link para o chamado); adicionar e editar máquina e dar/desfazer baixa no modo edição (chave e `X-Usuario` nos cabeçalhos); registrar movimentação (sem modo edição). O Nº Semin dos chamados abre a ficha.
+   - 58 testes passando. Contrato conferido com o servidor no ar (busca, ficha, 403 sem chave, edição com chave, movimentação, 422 da baixa com chamado aberto).
+   - Ficou para depois (precisam do servidor): aba "Movimentações" com a lista do período (não há endpoint que liste todas) e "Adicionar software" (pendência). Setores e locais fixos da maquete até existir um cadastro.
+6. ✅ **Processos** (27/11/2026, só leitura como o servidor): árvore de pastas com total, abrir/fechar, "Abrir todas"/"Fechar todas"; busca pelo servidor (sem acento) mostrando só o caminho até os achados; o processo abre ao lado, em painel com rolagem própria, com pasta, responsável, data, tags, e o índice "Neste processo" que acompanha a rolagem; blocos do Helplixo atual (títulos, parágrafos, listas, código, avisos, imagem, link, passos do formato antigo); caminhos de pasta são copiados (o navegador não abre pastas locais). Entra em "Continue de onde parou".
+   - 70 testes passando. Conferido com o servidor no ar.
+   - Ficou para depois (pendências do servidor): criar/editar processos e pastas, anexos e imagens (a imagem aparece como espaço reservado com a legenda), processos parecidos.
+7. ✅ **Contatos** (27/11/2026): Internos e Externos trocando com um clique (com a contagem); filtros no servidor (secretaria, andar, ordem; serviço e situação do contrato) com as opções que o servidor manda; contrato com cor (vencido, vence em até 60 dias, em dia); "Novo contato" no modo edição, avisando com quem o ramal é dividido; a lista recarrega na hora.
+8. ✅ **Calendário** (27/11/2026): visões Dia, Semana, Mês e Agenda; "Hoje", ‹ e ›; busca; agendas por tipo que ligam e desligam; fins de semana opcionais; expediente 8h–14h destacado e a linha da hora atual; clicar num horário da Semana/Dia marca ali; detalhe com repetição, descrição, autor e "Entrou sozinho" para os automáticos; remover só o próprio cargo ou um cargo acima no mesmo setor (`X-Cargo`); "Novo aviso" para todos e "Nova marcação" no modo edição (`X-Usuario`/`X-Cargo`/chave). Lembretes no sino (`/api/calendario/lembretes`, a cada minuto), com contador e "Marcar todas como lidas".
+   - 92 testes passando. Contrato de Contatos e Calendário conferido com o servidor no ar (403 sem chave, 201 com chave, aviso da Triagem, manutenção recusada sem modo edição, remoção).
+   - Provisório: o formulário de marcação ainda não tem a caixa "Urgente" (a maquete não tem; o servidor aceita).
+9. ✅ **Busca única** (27/11/2026): Ctrl K (ou "Buscar" na lateral) abre a janela da maquete com Chamados, Máquinas, Processos, Contatos internos e externos (até 5 por grupo; 3 sem texto). Chamados dos últimos 90 dias filtrados na tela; o resto vem do servidor (`/api/inventario`, `/api/processos`, `/api/contatos/...`) a partir de 2 letras, esperando parar de digitar. Escolher um item abre o chamado, a máquina, o processo ou os Contatos já filtrados. 98 testes passando; conferido com o servidor no ar.
+
+## O que falta (precisa de decisão ou do servidor)
+
+- Servidor: registrar chamado; assumir e trocar técnico; movimentação junto do fechamento; lista de todas as movimentações (aba "Movimentações" do Inventário); adicionar software à máquina; criar/editar processos e pastas com anexos (e entregar as imagens dos processos); processos parecidos; login com permissões; banco de dados.
+- Telas: Ferramentas (fora do plano desta etapa); PDF e Excel dos chamados.
 
 ## Regras que continuam valendo
 

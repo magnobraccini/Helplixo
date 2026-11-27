@@ -1,0 +1,77 @@
+/* Inventário, copiado dos estilos da maquete (web/docs/maquete-v32.dc.html, linhas 874 a 1220). */
+
+.espaco { flex: 1; }
+.botao-contorno {
+  min-height: 36px; padding: 0 14px; border: 0; border-radius: 6px; background: var(--c-ffffff);
+  box-shadow: inset 0 0 0 1px var(--c-d5dbe4); color: var(--c-1e2430); font-size: 14px; cursor: pointer;
+}
+.botao-perigo { color: var(--c-8a2a27); }
+.botao-perigo-cheio { background: var(--c-c4302b); color: #FFFFFF; font-weight: 600; }
+.botao-edicao {
+  min-height: 36px; padding: 0 14px; border: 0; border-radius: 6px; background: var(--c-fbf3db);
+  color: var(--c-6b4f0e); font-size: 14px; font-weight: 600; cursor: pointer;
+}
+
+/* busca */
+.busca-grande {
+  display: flex; align-items: center; gap: 10px; padding: 0 14px; border-radius: 8px;
+  background: var(--c-ffffff); box-shadow: inset 0 0 0 1px var(--c-d5dbe4); color: var(--c-677085);
+}
+.busca-grande input { flex: 1; min-height: 46px; border: 0; background: transparent; font-size: 15px; color: var(--c-1e2430); }
+.busca-grande input:focus { box-shadow: none; }
+.busca-grande:focus-within { box-shadow: inset 0 0 0 1px #2383E2, 0 0 0 3px rgba(35, 131, 226, .18); }
+.inventario-resumo { font-size: 13px; color: var(--c-677085); }
+.aviso-muitos { font-size: 13px; color: var(--c-6b4f0e); }
+.lista-maquinas { display: flex; flex-direction: column; }
+.item-maquina {
+  display: grid; grid-template-columns: 90px minmax(0, 1fr) auto; gap: 4px 14px; align-items: center; padding: 10px 8px;
+  border: 0; border-bottom: 1px solid var(--c-e4e8ee); background: transparent; cursor: pointer; text-align: left;
+  color: var(--c-1e2430); font-size: 14px;
+}
+.item-maquina-codigo { font-family: SFMono-Regular, Menlo, Consolas, monospace; font-size: 15px; color: var(--c-0d6159); }
+.item-maquina-meio { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.item-maquina-titulo { font-weight: 500; }
+.item-maquina-sub { font-size: 12px; color: var(--c-677085); }
+.item-maquina-selos { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.item-maquina-selos .pilula-status { padding: 2px 8px; }
+
+/* formulários em painel */
+.painel-form {
+  display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: 8px;
+  background: var(--c-ffffff); box-shadow: inset 0 0 0 1px var(--c-e1e6ed);
+}
+.painel-form h2 { margin: 0; font-size: 15px; font-weight: 600; }
+.painel-form-topo { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
+.selo-edicao { font-size: 12px; color: var(--c-6b4f0e); }
+.painel-form-secao { font-size: 12px; font-weight: 600; color: var(--c-677085); text-transform: uppercase; letter-spacing: .04em; }
+.painel-form .campo select, .painel-form .campo input, .form-baixa .campo select, .form-baixa .campo input {
+  min-height: 36px; padding: 0 8px; border: 1px solid var(--c-d5dbe4); border-radius: 6px;
+  font-size: 14px; color: var(--c-1e2430); background: var(--c-ffffff);
+}
+.painel-form .campo input[readonly] { background: var(--c-f3f5f8); }
+.form-baixa {
+  display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; padding: 12px 14px; border-radius: 8px; background: var(--c-fdf2f2);
+}
+.campo-largo { flex: 1 1 260px; }
+
+/* ficha */
+.faixa-baixada {
+  display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 8px;
+  background: var(--c-fdebec); color: var(--c-5d1715); font-size: 14px;
+}
+.faixa-baixada svg { flex: none; }
+.resumo-maquina { display: flex; flex-wrap: wrap; gap: 8px; }
+.resumo-item { display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; border-radius: 8px; min-width: 120px; }
+.resumo-nome { font-size: 11px; font-weight: 600; color: var(--c-677085); }
+.resumo-valor { font-size: 14px; font-weight: 600; }
+.abas-quebram { flex-wrap: wrap; }
+.ficha-maquina-corpo { display: flex; flex-direction: column; gap: 12px; }
+.propriedades-largas { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 0 28px; }
+.propriedades-largas .propriedade { grid-template-columns: 150px 1fr; }
+.mono { font-family: SFMono-Regular, Menlo, Consolas, monospace; }
+.faixa-office { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 14px; border-radius: 8px; font-size: 14px; }
+.subtitulo-ficha { margin: 8px 0 0; font-size: 15px; font-weight: 600; }
+.tabela-simples { width: 100%; border-collapse: collapse; font-size: 14px; }
+.tabela-simples th { padding: 8px 6px; text-align: left; font-size: 12px; font-weight: 500; color: var(--c-677085); }
+.tabela-simples td { padding: 8px 6px; border-top: 1px solid var(--c-e4e8ee); vertical-align: top; }
+.tabela-simples .pilula-status { padding: 2px 8px; white-space: nowrap; }

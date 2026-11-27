@@ -1,0 +1,25 @@
+/* Estilos globais, copiados das regras gerais da maquete (web/docs/maquete-v32.dc.html, linhas 16 a 31). */
+@import './estilos/tokens.css';
+
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  background: var(--fundo);
+  color: var(--c-1e2430);
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; }
+a:hover { color: var(--c-0d6159); }
+button, input, select, textarea { font-family: inherit; }
+::selection { background: rgba(35, 131, 226, .28); }
+button { transition: background-color .12s ease, filter .12s ease; }
+button:hover { filter: brightness(.96); }
+[data-tema="escuro"] button:hover { filter: brightness(1.18); }
+:focus-visible { outline: 2px solid rgba(35, 131, 226, .65); outline-offset: 1px; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: #2383E2 !important; box-shadow: 0 0 0 3px rgba(35, 131, 226, .18); }
+input::placeholder, textarea::placeholder { color: var(--c-98a0b3); }
+tbody tr:hover > td { background-color: rgba(55, 53, 47, .03); }
+[data-tema="escuro"] tbody tr:hover > td { background-color: rgba(255, 255, 255, .03); }
+* { scrollbar-width: thin; scrollbar-color: var(--c-c6cdd8) transparent; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
