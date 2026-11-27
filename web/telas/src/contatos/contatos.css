@@ -1,0 +1,16 @@
+/* Contatos, copiado dos estilos da maquete (web/docs/maquete-v32.dc.html, linhas 1355 a 1466). */
+
+.contatos-barra { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.filtros-contatos {
+  display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; padding: 10px 12px; border-radius: 8px; background: var(--c-f3f5f8);
+}
+.filtros-contatos label { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--c-677085); }
+.filtros-contatos select {
+  min-height: 34px; padding: 0 8px; border: 1px solid var(--c-d5dbe4); border-radius: 6px; font-size: 13px; color: var(--c-1e2430); background: var(--c-ffffff);
+}
+.filtros-info { font-size: 13px; color: var(--c-677085); align-self: center; }
+.tabela-contatos td { padding: 11px 6px; }
+.tabela-contatos a { color: var(--c-0d6159); }
+.forte { font-weight: 500; }
+.contrato { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.contrato .pilula-status { padding: 2px 8px; white-space: nowrap; }

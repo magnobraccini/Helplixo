@@ -10,6 +10,7 @@ import type { AbaMaquina } from './inventario/FichaMaquina'
 import { TelaInventario } from './inventario/TelaInventario'
 import type { DetalheProcesso } from './api/processos'
 import { TelaProcessos } from './processos/TelaProcessos'
+import { TelaContatos } from './contatos/TelaContatos'
 import { Configuracoes } from './configuracoes/Configuracoes'
 import { SenhaEdicao } from './configuracoes/SenhaEdicao'
 import { useEdicao } from './edicao/useEdicao'
@@ -188,7 +189,13 @@ function App() {
             />
           </section>
 
-          {!['chamados', 'inicio', 'inventario', 'processos'].includes(secao) && (
+          {secao === 'contatos' && (
+            <section className="secao">
+              <TelaContatos editando={edicao.ligado} chave={edicao.chave} avisar={avisar} />
+            </section>
+          )}
+
+          {!['chamados', 'inicio', 'inventario', 'processos', 'contatos'].includes(secao) && (
             <section className="secao">
               <CabecalhoPagina titulo={def.titulo} subtitulo={def.subtitulo} />
               <p className="pagina-em-breve">Esta tela entra nos próximos passos.</p>
